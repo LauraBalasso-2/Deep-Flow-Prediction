@@ -54,22 +54,25 @@ print("Dropout: {}".format(dropout))
 
 ##########################
 
-seed = random.randint(0, 2 ** 32 - 1)
+seed = 0 # random.randint(0, 2 ** 32 - 1)
 print("Random seed: {}".format(seed))
 random.seed(seed)
 np.random.seed(seed)
 torch.manual_seed(seed)
 
 # create pytorch data object with dfp dataset
-data = dataset.TurbDataset(prop, shuffle=1)
+data = dataset.TurbDataset(prop,
+                           dataDir="/home/laura/exclude_backup/gyroids/sdf_velocity_dP_slices/train/",
+                           dataDirTest= "/home/laura/exclude_backup/gyroids/sdf_velocity_dP_slices/test/",
+                           shuffle=0)
 trainLoader = DataLoader(data, batch_size=batch_size, shuffle=True, drop_last=True)
 print("Training batches: {}".format(len(trainLoader)))
 dataValidation = dataset.ValiDataset(data)
-valiLoader = DataLoader(dataValidation, batch_size=batch_size, shuffle=False, drop_last=True)
+valiLoader = DataLoader(dataValidation, batch_size=batch_size, shuffle=True, drop_last=True)
 print("Validation batches: {}".format(len(valiLoader)))
 
 # setup training
-epochs = 500  # int(iterations / len(trainLoader) + 0.5)
+epochs = 1000  # int(iterations / len(trainLoader) + 0.5)
 netG = TurbNetG(channelExponent=expo, dropout=dropout)
 print(netG)  # print full net
 model_parameters = filter(lambda p: p.requires_grad, netG.parameters())
@@ -81,11 +84,11 @@ if len(doLoad) > 0:
     netG.load_state_dict(torch.load(doLoad))
     print("Loaded model " + doLoad)
 
-criterionL1 = nn.L1Loss()
+criterionL1 = utils.CustomWeightedL1Loss(0.0, sdf_threshold=0.0001)  # nn.L1Loss()
 optimizerG = optim.Adam(netG.parameters(), lr=lrG, betas=(0.5, 0.999), weight_decay=0.0)
 
 targets = Variable(torch.FloatTensor(batch_size, 3, 128, 128))
-inputs = Variable(torch.FloatTensor(batch_size, 1, 128, 128))
+inputs = Variable(torch.FloatTensor(batch_size, 2, 128, 128))
 
 ##########################
 
@@ -102,6 +105,7 @@ for epoch in range(epochs):
         targets.data.copy_(targets_cpu.float())
 
         # compute LR decay
+
         if decayLr:
             currLr = utils.computeLR(epoch, epochs, lrG * 0.1, lrG)
             if currLr < lrG:
@@ -111,7 +115,7 @@ for epoch in range(epochs):
         netG.zero_grad()
         gen_out = netG(inputs)
 
-        lossL1 = criterionL1(gen_out, targets)
+        lossL1 = criterionL1(gen_out, targets, inputs[:, :1, :, :])
         lossL1.backward()
 
         optimizerG.step()
@@ -134,20 +138,22 @@ for epoch in range(epochs):
         outputs = netG(inputs)
         outputs_cpu = outputs.data.cpu().numpy()
 
-        lossL1 = criterionL1(outputs, targets)
+        lossL1 = criterionL1(outputs, targets, inputs[:, :1, :, :])
         L1val_accum += lossL1.item()
 
         if epoch % 50 == 0 and i == 0:
-            # input_ndarray = inputs_cpu.cpu().numpy()[0]
-            # v_norm = (np.max(np.abs(input_ndarray[0, :, :])) ** 2) ** 0.5
-            #
-            # outputs_denormalized = data.denormalize(outputs_cpu[0], v_norm)
-            # targets_denormalized = data.denormalize(targets_cpu.cpu().numpy()[0], v_norm)
+            input_ndarray = inputs_cpu.cpu().numpy()[0]
+            v_norm = (np.max(np.abs(input_ndarray[0, :, :])) ** 2 + np.max(np.abs(input_ndarray[1, :, :]))**2) ** 0.5
+            outputs_denormalized = data.denormalize(outputs_cpu[0], v_norm)
+            targets_denormalized = data.denormalize(targets_cpu.cpu().numpy()[0], v_norm)
 
             utils.makeDirs(["results_train"])
             # utils.imageOut("results_train/epoch{}_{}".format(epoch, i), outputs_cpu[0], targets_cpu.cpu().numpy()[0],
             #                saveTargets=True)
-            utils.save_true_pred_img("results_train/epoch{}_{}".format(epoch, i), outputs_cpu[0], targets_cpu.cpu().numpy()[0])
+            utils.save_true_pred_img("results_train/epoch{}_{}".format(epoch, i),
+                                     outputs_denormalized,
+                                     targets_denormalized,
+                                     input_ndarray[0].reshape(128, 128))
 
     # data for graph plotting
     L1_accum /= len(trainLoader)

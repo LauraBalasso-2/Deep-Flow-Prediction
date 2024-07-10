@@ -55,20 +55,20 @@ def LoaderNormalizer(data, isTest=False, shuffle=0, dataProp=None):
             print("Reducing data to load for tests")
             files = files[0:min(10, len(files))]
         data.totalLength = len(files)
-        data.inputs = np.empty((len(files), 1, 128, 128))
+        data.inputs = np.empty((len(files), 2, 128, 128))
         data.targets = np.empty((len(files), 3, 128, 128))
 
         for i, file in enumerate(files):
             npfile = np.load(data.dataDir + file)
             d = npfile['a']
-            data.inputs[i] = d[0:1]
-            data.targets[i] = d[1:4]
+            data.inputs[i] = d[0:2]
+            data.targets[i] = d[2:5]
         print("Number of data loaded:", len(data.inputs))
 
     else:
         # load from folders reg, sup, and shear under the folder dataDir
         data.totalLength = int(dataProp[0])
-        data.inputs = np.empty((data.totalLength, 1, 128, 128))
+        data.inputs = np.empty((data.totalLength, 2, 128, 128))
         data.targets = np.empty((data.totalLength, 3, 128, 128))
 
         files1 = listdir(data.dataDir + "reg/")
@@ -87,19 +87,19 @@ def LoaderNormalizer(data, isTest=False, shuffle=0, dataProp=None):
             if i >= (1 - dataProp[3]) * dataProp[0]:
                 npfile = np.load(data.dataDir + "shear/" + files3[i - temp_2])
                 d = npfile['a']
-                data.inputs[i] = d[0:1]
-                data.targets[i] = d[1:4]
+                data.inputs[i] = d[0:2]
+                data.targets[i] = d[2:5]
             elif i >= (dataProp[1]) * dataProp[0]:
                 npfile = np.load(data.dataDir + "sup/" + files2[i - temp_1])
                 d = npfile['a']
-                data.inputs[i] = d[0:1]
-                data.targets[i] = d[1:4]
+                data.inputs[i] = d[0:2]
+                data.targets[i] = d[2:5]
                 temp_2 = i + 1
             else:
                 npfile = np.load(data.dataDir + "reg/" + files1[i])
                 d = npfile['a']
-                data.inputs[i] = d[0:1]
-                data.targets[i] = d[1:4]
+                data.inputs[i] = d[0:2]
+                data.targets[i] = d[2:5]
                 temp_1 = i + 1
                 temp_2 = i + 1
         print("Number of data loaded (reg, sup, shear):", temp_1, temp_2 - temp_1, i + 1 - temp_2)
@@ -142,7 +142,7 @@ def LoaderNormalizer(data, isTest=False, shuffle=0, dataProp=None):
 
     else:  # use current max values from loaded data
         data.max_inputs_0 = find_absmax(data, 0, 0)
-        # data.max_inputs_1 = find_absmax(data, 0, 1)
+        data.max_inputs_1 = find_absmax(data, 0, 1)
         # data.max_inputs_2 = find_absmax(data, 0, 2)  # mask, not really necessary
         # print("Maxima inputs " + format([data.max_inputs_0, data.max_inputs_1, data.max_inputs_2]))
         print("Maxima inputs " + format(data.max_inputs_0))
@@ -152,12 +152,12 @@ def LoaderNormalizer(data, isTest=False, shuffle=0, dataProp=None):
         data.max_targets_2 = find_absmax(data, 1, 2)
         print("Maxima targets " + format([data.max_targets_0, data.max_targets_1, data.max_targets_2]))
 
-    # data.inputs[:, 0, :, :] *= (1.0 / data.max_inputs_0)
-    # data.inputs[:, 1, :, :] *= (1.0 / data.max_inputs_1)
-    #
-    # data.targets[:, 0, :, :] *= (1.0 / data.max_targets_0)
-    # data.targets[:, 1, :, :] *= (1.0 / data.max_targets_1)
-    # data.targets[:, 2, :, :] *= (1.0 / data.max_targets_2)
+    data.inputs[:, 0, :, :] *= (1.0 / data.max_inputs_0)
+    data.inputs[:, 1, :, :] *= (1.0 / data.max_inputs_1)
+
+    data.targets[:, 0, :, :] *= (1.0 / data.max_targets_0)
+    data.targets[:, 1, :, :] *= (1.0 / data.max_targets_1)
+    data.targets[:, 2, :, :] *= (1.0 / data.max_targets_2)
 
     ###################################### NORMALIZATION  OF TEST DATA #############################################
 
@@ -165,13 +165,13 @@ def LoaderNormalizer(data, isTest=False, shuffle=0, dataProp=None):
         files = listdir(data.dataDirTest)
         files.sort()
         data.totalLength = len(files)
-        data.inputs = np.empty((len(files), 1, 128, 128))
+        data.inputs = np.empty((len(files), 2, 128, 128))
         data.targets = np.empty((len(files), 3, 128, 128))
         for i, file in enumerate(files):
             npfile = np.load(data.dataDirTest + file)
             d = npfile['a']
-            data.inputs[i] = d[0:1]
-            data.targets[i] = d[1:4]
+            data.inputs[i] = d[0:2]
+            data.targets[i] = d[2:5]
 
         if removePOffset:
             for i in range(data.totalLength):
@@ -187,7 +187,7 @@ def LoaderNormalizer(data, isTest=False, shuffle=0, dataProp=None):
                 data.targets[i, 2, :, :] /= v_norm
 
         data.inputs[:, 0, :, :] *= (1.0 / data.max_inputs_0)
-        # data.inputs[:, 1, :, :] *= (1.0 / data.max_inputs_1)
+        data.inputs[:, 1, :, :] *= (1.0 / data.max_inputs_1)
 
         data.targets[:, 0, :, :] *= (1.0 / data.max_targets_0)
         data.targets[:, 1, :, :] *= (1.0 / data.max_targets_1)

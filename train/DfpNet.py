@@ -48,7 +48,7 @@ class TurbNetG(nn.Module):
         channels = int(2 ** channelExponent + 0.5)
 
         self.layer1 = nn.Sequential()
-        self.layer1.add_module('layer1_conv', nn.Conv2d(1, channels, 4, 2, 1, bias=True))
+        self.layer1.add_module('layer1_conv', nn.Conv2d(2, channels, 4, 2, 1, bias=True))
 
         self.layer2 = blockUNet(channels, channels * 2, 'layer2', transposed=False, bn=True, relu=False,
                                 dropout=dropout)

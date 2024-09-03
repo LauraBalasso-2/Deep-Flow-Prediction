@@ -51,18 +51,18 @@ def LoaderNormalizer(data, isTest=False, shuffle=0, dataProp=None):
         files.sort()
         for i in range(shuffle):
             random.shuffle(files)
-        if isTest:
-            print("Reducing data to load for tests")
-            files = files[0:min(10, len(files))]
+
         data.totalLength = len(files)
         data.inputs = np.empty((len(files), 2, 128, 128))
         data.targets = np.empty((len(files), 3, 128, 128))
+        data.thicknesses = np.empty((len(files), 1))
 
         for i, file in enumerate(files):
             npfile = np.load(data.dataDir + file)
             d = npfile['a']
             data.inputs[i] = d[0:2]
             data.targets[i] = d[2:5]
+            data.thicknesses[i] = int(file.split("_")[1])
         print("Number of data loaded:", len(data.inputs))
 
     else:
@@ -167,11 +167,13 @@ def LoaderNormalizer(data, isTest=False, shuffle=0, dataProp=None):
         data.totalLength = len(files)
         data.inputs = np.empty((len(files), 2, 128, 128))
         data.targets = np.empty((len(files), 3, 128, 128))
+        data.thicknesses = np.empty((len(files), 1))
         for i, file in enumerate(files):
             npfile = np.load(data.dataDirTest + file)
             d = npfile['a']
             data.inputs[i] = d[0:2]
             data.targets[i] = d[2:5]
+            data.thicknesses[i] = int(file.split("_")[1])
 
         if removePOffset:
             for i in range(data.totalLength):

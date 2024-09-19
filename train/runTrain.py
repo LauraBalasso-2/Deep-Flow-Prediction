@@ -151,9 +151,8 @@ for epoch in range(epochs):
 
         if epoch % 50 == 0 and i == 0:
             input_ndarray = inputs_cpu.cpu().numpy()[0]
-            v_norm = (np.max(np.abs(input_ndarray[0, :, :])) ** 2 + np.max(np.abs(input_ndarray[1, :, :]))**2) ** 0.5
-            outputs_denormalized = data.denormalize(outputs_cpu[0], v_norm)
-            targets_denormalized = data.denormalize(targets_cpu.cpu().numpy()[0], v_norm)
+            outputs_denormalized = data.denormalize(outputs_cpu[0])
+            targets_denormalized = data.denormalize(targets_cpu.cpu().numpy()[0])
 
             utils.makeDirs(["results_train"])
             # utils.imageOut("results_train/epoch{}_{}".format(epoch, i), outputs_cpu[0], targets_cpu.cpu().numpy()[0],

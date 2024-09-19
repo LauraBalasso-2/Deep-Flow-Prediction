@@ -141,7 +141,7 @@ class SlicesDataset(Dataset):
         return self.inputs[idx], self.targets[idx]
 
     #  reverts normalization 
-    def denormalize(self, data, v_norm):
+    def denormalize(self, data):
         a = data.copy()
         a[0, :, :] /= (1.0 / self.max_targets_0)
         a[1, :, :] /= (1.0 / self.max_targets_1)

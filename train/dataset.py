@@ -55,7 +55,8 @@ def LoaderNormalizer(data, isTest=False, shuffle=0, dataProp=None):
         data.totalLength = len(files)
         data.inputs = np.empty((len(files), 2, 128, 128))
         data.targets = np.empty((len(files), 3, 128, 128))
-        data.thicknesses = np.empty((len(files), 1))
+        data.thicknesses = np.empty(len(files))
+        data.slice_indexes = np.empty(len(files))
 
         for i, file in enumerate(files):
             npfile = np.load(data.dataDir + file)
@@ -63,6 +64,7 @@ def LoaderNormalizer(data, isTest=False, shuffle=0, dataProp=None):
             data.inputs[i] = d[0:2]
             data.targets[i] = d[2:5]
             data.thicknesses[i] = int(file.split("_")[1])
+            data.slice_indexes[i] = int(file.split("_")[-1].split(".")[0])
         print("Number of data loaded:", len(data.inputs))
 
     else:
@@ -167,13 +169,15 @@ def LoaderNormalizer(data, isTest=False, shuffle=0, dataProp=None):
         data.totalLength = len(files)
         data.inputs = np.empty((len(files), 2, 128, 128))
         data.targets = np.empty((len(files), 3, 128, 128))
-        data.thicknesses = np.empty((len(files), 1))
+        data.thicknesses = np.empty(len(files))
+        data.slice_indexes = np.empty(len(files))
         for i, file in enumerate(files):
             npfile = np.load(data.dataDirTest + file)
             d = npfile['a']
             data.inputs[i] = d[0:2]
             data.targets[i] = d[2:5]
             data.thicknesses[i] = int(file.split("_")[1])
+            data.slice_indexes[i] = int(file.split("_")[-1].split(".")[0])
 
         if removePOffset:
             for i in range(data.totalLength):

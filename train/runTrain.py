@@ -15,7 +15,7 @@ from torch.autograd import Variable
 from torch.utils.data import DataLoader
 import torch.optim as optim
 
-from DfpNet import TurbNetG, weights_init
+from uNet_architecture import UNet, weights_init
 import dataset
 import utils
 
@@ -75,7 +75,7 @@ print("Validation batches: {}".format(len(valiLoader)))
 
 # setup training
 epochs = 1000  # int(iterations / len(trainLoader) + 0.5)
-netG = TurbNetG(channelExponent=expo, dropout=dropout)
+netG = UNet(channelExponent=expo, dropout=dropout)
 print(netG)  # print full net
 model_parameters = filter(lambda p: p.requires_grad, netG.parameters())
 params = sum([np.prod(p.size()) for p in model_parameters])

@@ -8,7 +8,6 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 
 def weights_init(m):
@@ -42,9 +41,9 @@ def blockUNet(in_c, out_c, name, transposed=False, bn=True, relu=True, size=4, p
 
 
 # generator model
-class TurbNetG(nn.Module):
+class UNet(nn.Module):
     def __init__(self, channelExponent=6, dropout=0.):
-        super(TurbNetG, self).__init__()
+        super(UNet, self).__init__()
         channels = int(2 ** channelExponent + 0.5)
 
         self.layer1 = nn.Sequential()
@@ -56,8 +55,9 @@ class TurbNetG(nn.Module):
                                  dropout=dropout)
         self.layer3 = blockUNet(channels * 2, channels * 4, 'layer3', transposed=False, bn=True, relu=False,
                                 dropout=dropout)
-        # note the following layer also had a kernel size of 2 in the original version (cf https://arxiv.org/abs/1810.08217)
-        # it is now changed to size 4 for encoder/decoder symmetry; to reproduce the old/original results, please change it to 2
+        # note the following layer also had a kernel size of 2 in the original version (cf
+        # https://arxiv.org/abs/1810.08217) it is now changed to size 4 for encoder/decoder symmetry; to reproduce
+        # the old/original results, please change it to 2
         self.layer4 = blockUNet(channels * 4, channels * 8, 'layer4', transposed=False, bn=True, relu=False,
                                 dropout=dropout, size=4)  # note, size 4!
         self.layer5 = blockUNet(channels * 8, channels * 8, 'layer5', transposed=False, bn=True, relu=False,
@@ -106,27 +106,3 @@ class TurbNetG(nn.Module):
         dout1 = self.dlayer1(dout2_out1)
         return dout1
 
-
-# discriminator (only for adversarial training, currently unused)
-class TurbNetD(nn.Module):
-    def __init__(self, in_channels1, in_channels2, ch=64):
-        super(TurbNetD, self).__init__()
-
-        self.c0 = nn.Conv2d(in_channels1 + in_channels2, ch, 4, stride=2, padding=2)
-        self.c1 = nn.Conv2d(ch, ch * 2, 4, stride=2, padding=2)
-        self.c2 = nn.Conv2d(ch * 2, ch * 4, 4, stride=2, padding=2)
-        self.c3 = nn.Conv2d(ch * 4, ch * 8, 4, stride=2, padding=2)
-        self.c4 = nn.Conv2d(ch * 8, 1, 4, stride=2, padding=2)
-
-        self.bnc1 = nn.BatchNorm2d(ch * 2)
-        self.bnc2 = nn.BatchNorm2d(ch * 4)
-        self.bnc3 = nn.BatchNorm2d(ch * 8)
-
-    def forward(self, x1, x2):
-        h = self.c0(torch.cat((x1, x2), 1))
-        h = self.bnc1(self.c1(F.leaky_relu(h, negative_slope=0.2)))
-        h = self.bnc2(self.c2(F.leaky_relu(h, negative_slope=0.2)))
-        h = self.bnc3(self.c3(F.leaky_relu(h, negative_slope=0.2)))
-        h = self.c4(F.leaky_relu(h, negative_slope=0.2))
-        h = F.sigmoid(h)
-        return h

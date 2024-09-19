@@ -4,7 +4,7 @@ import os.path
 import dataset
 from torch.utils.data import DataLoader
 import torch
-from DfpNet import TurbNetG, weights_init
+from uNet_architecture import UNet, weights_init
 from torch.autograd import Variable
 import numpy as np
 import utils
@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 ## Load model
 dropout = 0.
 expo = 3
-netG = TurbNetG(channelExponent=expo, dropout=dropout)
+netG = UNet(channelExponent=expo, dropout=dropout)
 netG.load_state_dict(torch.load("modelG"))
 netG.eval()
 

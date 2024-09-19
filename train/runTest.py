@@ -15,7 +15,7 @@ from torch.autograd import Variable
 from torch.utils.data import DataLoader
 
 from dataset import SlicesDataset
-from DfpNet import TurbNetG, weights_init
+from uNet_architecture import UNet, weights_init
 import utils
 from utils import log
 
@@ -43,7 +43,7 @@ outputs_dn = torch.FloatTensor(1, 3, 128, 128)
 outputs_dn = Variable(outputs_dn)
 outputs_dn = outputs_dn.cuda()
 
-netG = TurbNetG(channelExponent=expo)
+netG = UNet(channelExponent=expo)
 lf = "./" + prefix + "testout{}.txt".format(suffix) 
 utils.makeDirs(["results_test"])
 

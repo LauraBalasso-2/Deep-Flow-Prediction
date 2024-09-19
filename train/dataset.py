@@ -38,6 +38,7 @@ def LoaderNormalizer(data, isTest=False, shuffle=0):
     for i in range(shuffle):
         random.shuffle(files)
 
+    data.totalLength = len(files)
     data.inputs = np.empty((len(files), 2, 128, 128))
     data.targets = np.empty((len(files), 3, 128, 128))
     data.thicknesses = np.empty(len(files))
@@ -62,7 +63,6 @@ def LoaderNormalizer(data, isTest=False, shuffle=0):
     print("Maxima training targets " + format([data.max_targets_0, data.max_targets_1, data.max_targets_2]))
 
     if not isTest:
-        data.totalLength = len(files)
         data.inputs[:, 0, :, :] *= (1.0 / data.max_inputs_0)
         data.inputs[:, 1, :, :] *= (1.0 / data.max_inputs_1)
 

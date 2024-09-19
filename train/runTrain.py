@@ -21,8 +21,6 @@ import utils
 
 ######## Settings ########
 
-# number of training iterations
-iterations = 10000
 # batch size
 batch_size = 10
 # learning rate, generator
@@ -31,9 +29,6 @@ lrG = 0.0006
 decayLr = True
 # channel exponent to control network size
 expo = 5
-# data set config
-prop = None  # by default, use all from "../data/train"
-#prop=[1000,0.75,0,0.25] # mix data from multiple directories
 # save txt files with per epoch loss?
 saveL1 = False
 
@@ -44,12 +39,11 @@ if len(sys.argv) > 1:
     prefix = sys.argv[1]
     print("Output prefix: {}".format(prefix))
 
-dropout = 0.  # note, the original runs from https://arxiv.org/abs/1810.08217 used slight dropout, but the effect is minimal; conv layers "shouldn't need" dropout, hence set to 0 here.
+dropout = 0.
 doLoad = ""  # optional, path to pre-trained model
 
 print("LR: {}".format(lrG))
 print("LR decay: {}".format(decayLr))
-print("Iterations: {}".format(iterations))
 print("Dropout: {}".format(dropout))
 
 ##########################
@@ -63,10 +57,10 @@ torch.cuda.manual_seed_all(seed)
 #torch.backends.cudnn.deterministic=True # warning, slower
 
 # create pytorch data object with dfp dataset
-data = dataset.SlicesDataset(prop,
-                             dataDir="/home/laura/exclude_backup/gyroids/sdf_velocity_dP_slices/train/",
+data = dataset.SlicesDataset(dataDir="/home/laura/exclude_backup/gyroids/sdf_velocity_dP_slices/train/",
                              dataDirTest= "/home/laura/exclude_backup/gyroids/sdf_velocity_dP_slices/test/",
                              shuffle=0)
+
 trainLoader = DataLoader(data, batch_size=batch_size, shuffle=True, drop_last=True)
 print("Training batches: {}".format(len(trainLoader)))
 dataValidation = dataset.ValiDataset(data)
@@ -74,12 +68,12 @@ valiLoader = DataLoader(dataValidation, batch_size=batch_size, shuffle=False, dr
 print("Validation batches: {}".format(len(valiLoader)))
 
 # setup training
-epochs = 1000  # int(iterations / len(trainLoader) + 0.5)
+epochs = 1000
 netG = UNet(channelExponent=expo, dropout=dropout)
 print(netG)  # print full net
 model_parameters = filter(lambda p: p.requires_grad, netG.parameters())
 params = sum([np.prod(p.size()) for p in model_parameters])
-print("Initialized TurbNet with {} trainable params ".format(params))
+print("Initialized UNet with {} trainable params ".format(params))
 
 netG.apply(weights_init)
 if len(doLoad) > 0:
@@ -90,7 +84,7 @@ netG.cuda()
 criterionL1 = utils.CustomWeightedL1Loss(0.0, sdf_threshold=0.0001)  # nn.L1Loss()
 criterionL1.cuda()
 
-optimizerG = optim.Adam(netG.parameters(), lr=lrG, betas=(0.5, 0.999), weight_decay=0.0)
+optimizer = optim.Adam(netG.parameters(), lr=lrG, betas=(0.5, 0.999), weight_decay=0.0)
 
 targets = Variable(torch.FloatTensor(batch_size, 3, 128, 128))
 inputs = Variable(torch.FloatTensor(batch_size, 2, 128, 128))
@@ -116,7 +110,7 @@ for epoch in range(epochs):
         if decayLr:
             currLr = utils.computeLR(epoch, epochs, lrG * 0.1, lrG)
             if currLr < lrG:
-                for g in optimizerG.param_groups:
+                for g in optimizer.param_groups:
                     g['lr'] = currLr
 
         netG.zero_grad()
@@ -125,7 +119,7 @@ for epoch in range(epochs):
         lossL1 = criterionL1(gen_out, targets, inputs[:, :1, :, :])
         lossL1.backward()
 
-        optimizerG.step()
+        optimizer.step()
 
         lossL1viz = lossL1.item()
         L1_accum += lossL1viz
@@ -180,4 +174,4 @@ plt.plot(val_loss_list)
 plt.xlabel("Epoch")
 plt.legend(["Train", "Val"])
 plt.savefig(prefix + "losses.png", dpi=120)
-torch.save(netG.state_dict(), prefix + "modelG")
+torch.save(netG.state_dict(), prefix + "model_U")

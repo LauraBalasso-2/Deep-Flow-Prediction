@@ -6,19 +6,20 @@
 #
 ################
 
-import os, sys, random
-import numpy as np
-import matplotlib.pyplot as plt
-import torch
 import argparse
-import torch.nn as nn
+import os
+import random
+
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
+import torch.optim as optim
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
-import torch.optim as optim
 
-from uNet_architecture import UNet, weights_init
 import dataset
 import utils
+from uNet_architecture import UNet, weights_init
 
 arg_parser = argparse.ArgumentParser(description="Train U-Net")
 arg_parser.add_argument(
@@ -27,32 +28,30 @@ arg_parser.add_argument(
     default="cpu",
     help="Device on which the training is performed. Must be cpu or gpu."
 )
+arg_parser.add_argument(
+    "--experiment",
+    "-e",
+    dest="experiment_directory",
+    required=True,
+    help="The experiment directory. This directory should include "
+         + "experiment specifications in 'specs.json', and logging will be "
+         + "done in this directory as well.",
+)
 
 args = arg_parser.parse_args()
 
 device = args.device
+experiment_directory = args.experiment_directory
 
-######## Settings ########
+specs = utils.load_experiment_specifications(experiment_directory)
 
-# batch size
-batch_size = 10
-# learning rate, generator
-lrG = 0.0006
-# decay learning rate?
-decayLr = True
-# channel exponent to control network size
-expo = 5
-# save txt files with per epoch loss?
+batch_size = specs['batch_size']
+lrG = specs['learning_rate']
+decayLr = specs['lr_decay']
+expo = specs["unet_channel_exponent"]
 saveL1 = False
 
-##########################
-
-prefix = ""
-if len(sys.argv) > 1:
-    prefix = sys.argv[1]
-    print("Output prefix: {}".format(prefix))
-
-dropout = 0.
+dropout = specs["dropout"]
 doLoad = ""  # optional, path to pre-trained model
 
 print("LR: {}".format(lrG))
@@ -61,14 +60,14 @@ print("Dropout: {}".format(dropout))
 
 ##########################
 
-seed = 0  # random.randint(0, 2 ** 32 - 1)
+seed = specs["random_seed"]
 print("Random seed: {}".format(seed))
 random.seed(seed)
 np.random.seed(seed)
 torch.manual_seed(seed)
 if device == "cuda":
     torch.cuda.manual_seed_all(seed)
-#torch.backends.cudnn.deterministic=True # warning, slower
+# torch.backends.cudnn.deterministic=True # warning, slower
 
 # create pytorch data object with dfp dataset
 data = dataset.SlicesDataset(dataDir="/home/laura/exclude_backup/gyroids/sdf_velocity_dP_slices/train/",
@@ -82,7 +81,7 @@ valiLoader = DataLoader(dataValidation, batch_size=batch_size, shuffle=False, dr
 print("Validation batches: {}".format(len(valiLoader)))
 
 # setup training
-epochs = 1000
+epochs = specs["epochs"]
 netG = utils.set_device(UNet(channelExponent=expo, dropout=dropout), device=device)
 print(netG)  # print full net
 model_parameters = filter(lambda p: p.requires_grad, netG.parameters())
@@ -94,14 +93,12 @@ if len(doLoad) > 0:
     netG.load_state_dict(torch.load(doLoad))
     print("Loaded model " + doLoad)
 
-
 criterionL1 = utils.set_device(utils.CustomWeightedL1Loss(0.0, sdf_threshold=0.0001), device=device)
 
 optimizer = optim.Adam(netG.parameters(), lr=lrG, betas=(0.5, 0.999), weight_decay=0.0)
 
 targets = utils.set_device(Variable(torch.FloatTensor(batch_size, 3, 128, 128)), device=device)
 inputs = utils.set_device(Variable(torch.FloatTensor(batch_size, 2, 128, 128)), device=device)
-
 
 ##########################
 
@@ -177,14 +174,14 @@ for epoch in range(epochs):
     val_loss_list.append(L1val_accum)
     if saveL1:
         if epoch == 0:
-            utils.resetLog(prefix + "L1.txt")
-            utils.resetLog(prefix + "L1val.txt")
-        utils.log(prefix + "L1.txt", "{} ".format(L1_accum), False)
-        utils.log(prefix + "L1val.txt", "{} ".format(L1val_accum), False)
+            utils.resetLog(os.path.join(experiment_directory, "L1.txt"))
+            utils.resetLog(os.path.join(experiment_directory, "L1val.txt"))
+        utils.log(os.path.join(experiment_directory, "L1.txt", "{} ".format(L1_accum)), False)
+        utils.log(os.path.join(experiment_directory, "L1val.txt", "{} ".format(L1val_accum)), False)
 
 plt.plot(train_loss_list)
 plt.plot(val_loss_list)
 plt.xlabel("Epoch")
 plt.legend(["Train", "Val"])
-plt.savefig(prefix + "losses.png", dpi=120)
-torch.save(netG.state_dict(), prefix + "model_U")
+plt.savefig(os.path.join(experiment_directory, "losses.png"), dpi=120)
+torch.save(netG.state_dict(), os.path.join(experiment_directory, "model_U"))

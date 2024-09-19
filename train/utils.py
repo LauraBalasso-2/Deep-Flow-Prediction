@@ -5,6 +5,7 @@
 # Helper functions for image output
 #
 ################
+import json
 
 import math, re, os
 import numpy as np
@@ -116,3 +117,20 @@ def set_device(obj, device):
         return obj.cuda()
     else:
         raise ValueError("Invalid device " + device + ". Device must be cpu or gpu")
+
+
+def get_specifications_filename(experiment_directory):
+    filename = os.path.join(experiment_directory, "specs.json")
+
+    if not os.path.isfile(filename):
+        raise Exception(
+            "The experiment directory ({}) does not include specifications file "
+            + '"specs.json"'.format(experiment_directory)
+        )
+
+    return filename
+
+
+def load_experiment_specifications(experiment_directory):
+    filename = get_specifications_filename(experiment_directory)
+    return json.load(open(filename))

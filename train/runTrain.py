@@ -10,6 +10,7 @@ import os, sys, random
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
+import argparse
 import torch.nn as nn
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
@@ -18,6 +19,18 @@ import torch.optim as optim
 from uNet_architecture import UNet, weights_init
 import dataset
 import utils
+
+arg_parser = argparse.ArgumentParser(description="Train U-Net")
+arg_parser.add_argument(
+    "--device",
+    dest="device",
+    default="cpu",
+    help="Device on which the training is performed. Must be cpu or gpu."
+)
+
+args = arg_parser.parse_args()
+
+device = args.device
 
 ######## Settings ########
 
@@ -48,17 +61,18 @@ print("Dropout: {}".format(dropout))
 
 ##########################
 
-seed = 0 # random.randint(0, 2 ** 32 - 1)
+seed = 0  # random.randint(0, 2 ** 32 - 1)
 print("Random seed: {}".format(seed))
 random.seed(seed)
 np.random.seed(seed)
 torch.manual_seed(seed)
-torch.cuda.manual_seed_all(seed)
+if device == "cuda":
+    torch.cuda.manual_seed_all(seed)
 #torch.backends.cudnn.deterministic=True # warning, slower
 
 # create pytorch data object with dfp dataset
 data = dataset.SlicesDataset(dataDir="/home/laura/exclude_backup/gyroids/sdf_velocity_dP_slices/train/",
-                             dataDirTest= "/home/laura/exclude_backup/gyroids/sdf_velocity_dP_slices/test/",
+                             dataDirTest="/home/laura/exclude_backup/gyroids/sdf_velocity_dP_slices/test/",
                              shuffle=0)
 
 trainLoader = DataLoader(data, batch_size=batch_size, shuffle=True, drop_last=True)
@@ -69,7 +83,7 @@ print("Validation batches: {}".format(len(valiLoader)))
 
 # setup training
 epochs = 1000
-netG = UNet(channelExponent=expo, dropout=dropout)
+netG = utils.set_device(UNet(channelExponent=expo, dropout=dropout), device=device)
 print(netG)  # print full net
 model_parameters = filter(lambda p: p.requires_grad, netG.parameters())
 params = sum([np.prod(p.size()) for p in model_parameters])
@@ -79,17 +93,15 @@ netG.apply(weights_init)
 if len(doLoad) > 0:
     netG.load_state_dict(torch.load(doLoad))
     print("Loaded model " + doLoad)
-netG.cuda()
 
-criterionL1 = utils.CustomWeightedL1Loss(0.0, sdf_threshold=0.0001)  # nn.L1Loss()
-criterionL1.cuda()
+
+criterionL1 = utils.set_device(utils.CustomWeightedL1Loss(0.0, sdf_threshold=0.0001), device=device)
 
 optimizer = optim.Adam(netG.parameters(), lr=lrG, betas=(0.5, 0.999), weight_decay=0.0)
 
-targets = Variable(torch.FloatTensor(batch_size, 3, 128, 128))
-inputs = Variable(torch.FloatTensor(batch_size, 2, 128, 128))
-targets = targets.cuda()
-inputs = inputs.cuda()
+targets = utils.set_device(Variable(torch.FloatTensor(batch_size, 3, 128, 128)), device=device)
+inputs = utils.set_device(Variable(torch.FloatTensor(batch_size, 2, 128, 128)), device=device)
+
 
 ##########################
 
@@ -102,7 +114,8 @@ for epoch in range(epochs):
     L1_accum = 0.0
     for i, traindata in enumerate(trainLoader, 0):
         inputs_cpu, targets_cpu = traindata
-        targets_cpu, inputs_cpu = targets_cpu.float().cuda(), inputs_cpu.float().cuda()
+        inputs_cpu = utils.set_device(inputs_cpu.float(), device)
+        targets_cpu = utils.set_device(targets_cpu.float(), device)
         inputs.data.resize_as_(inputs_cpu).copy_(inputs_cpu)
         targets.data.resize_as_(targets_cpu).copy_(targets_cpu)
 
@@ -133,7 +146,8 @@ for epoch in range(epochs):
     L1val_accum = 0.0
     for i, validata in enumerate(valiLoader, 0):
         inputs_cpu, targets_cpu = validata
-        targets_cpu, inputs_cpu = targets_cpu.float().cuda(), inputs_cpu.float().cuda()
+        inputs_cpu = utils.set_device(inputs_cpu.float(), device)
+        targets_cpu = utils.set_device(targets_cpu.float(), device)
         inputs.data.resize_as_(inputs_cpu).copy_(inputs_cpu)
         targets.data.resize_as_(targets_cpu).copy_(targets_cpu)
 
@@ -167,7 +181,6 @@ for epoch in range(epochs):
             utils.resetLog(prefix + "L1val.txt")
         utils.log(prefix + "L1.txt", "{} ".format(L1_accum), False)
         utils.log(prefix + "L1val.txt", "{} ".format(L1val_accum), False)
-
 
 plt.plot(train_loss_list)
 plt.plot(val_loss_list)

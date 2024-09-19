@@ -107,3 +107,12 @@ class CustomWeightedL1Loss(nn.Module):
             loss = torch.tensor(0.0, dtype=weighted_l1_loss.dtype, device=weighted_l1_loss.device)
 
         return loss
+
+
+def set_device(obj, device):
+    if device.upper() == 'CPU':
+        return obj.cpu()
+    elif device.upper() == 'GPU' or "cuda" in device:
+        return obj.cuda()
+    else:
+        raise ValueError("Invalid device " + device + ". Device must be cpu or gpu")

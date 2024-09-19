@@ -63,10 +63,10 @@ torch.cuda.manual_seed_all(seed)
 #torch.backends.cudnn.deterministic=True # warning, slower
 
 # create pytorch data object with dfp dataset
-data = dataset.TurbDataset(prop,
-                           dataDir="/home/laura/exclude_backup/gyroids/sdf_velocity_dP_slices/train/",
-                           dataDirTest= "/home/laura/exclude_backup/gyroids/sdf_velocity_dP_slices/test/",
-                           shuffle=0)
+data = dataset.SlicesDataset(prop,
+                             dataDir="/home/laura/exclude_backup/gyroids/sdf_velocity_dP_slices/train/",
+                             dataDirTest= "/home/laura/exclude_backup/gyroids/sdf_velocity_dP_slices/test/",
+                             shuffle=0)
 trainLoader = DataLoader(data, batch_size=batch_size, shuffle=True, drop_last=True)
 print("Training batches: {}".format(len(trainLoader)))
 dataValidation = dataset.ValiDataset(data)

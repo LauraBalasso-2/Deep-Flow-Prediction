@@ -61,10 +61,10 @@ np.random.seed(seed)
 torch.manual_seed(seed)
 
 # create pytorch data object with dfp dataset
-data = dataset.TurbDataset(prop,
-                           dataDir="/home/laura/exclude_backup/gyroids/sdf_velocity_dP_slices/train/",
-                           dataDirTest= "/home/laura/exclude_backup/gyroids/sdf_velocity_dP_slices/test/",
-                           shuffle=0)
+data = dataset.SlicesDataset(prop,
+                             dataDir="/home/laura/exclude_backup/gyroids/sdf_velocity_dP_slices/train/",
+                             dataDirTest= "/home/laura/exclude_backup/gyroids/sdf_velocity_dP_slices/test/",
+                             shuffle=0)
 trainLoader = DataLoader(data, batch_size=batch_size, shuffle=True, drop_last=True)
 print("Training batches: {}".format(len(trainLoader)))
 dataValidation = dataset.ValiDataset(data)
@@ -114,8 +114,22 @@ for epoch in range(epochs):
 
         netG.zero_grad()
         gen_out = netG(inputs)
+        print(f"Generator output: {gen_out.shape}")
+        print(f"Target output: {targets_cpu.shape}")
 
         lossL1 = criterionL1(gen_out, targets, inputs[:, :1, :, :])
+        print("Loss L1: {}".format(lossL1))
+
+        loss_comparison_x = criterionL1(gen_out[:, 0:1, :, :], targets[:, 0:1, :, :], inputs[:, :1, :, :]).detach().numpy()
+        loss_comparison_y = criterionL1(gen_out[:, 1:2, :, :], targets[:, 1:2, :, :], inputs[:, :1, :, :]).detach().numpy()
+        loss_comparison_z = criterionL1(gen_out[:, 2:3, :, :], targets[:, 2:3, :, :], inputs[:, :1, :, :]).detach().numpy()
+        print(f"Loss comparison x: {loss_comparison_x}")
+        print(f"Loss comparison y: {loss_comparison_y}")
+        print(f"Loss comparison z: {loss_comparison_z}")
+
+        print("Loss Comparison: {}".format(np.mean([loss_comparison_x, loss_comparison_y, loss_comparison_z])))
+
+        exit()
         lossL1.backward()
 
         optimizerG.step()

@@ -14,7 +14,7 @@ import torch.nn as nn
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 
-from dataset import TurbDataset
+from dataset import SlicesDataset
 from DfpNet import TurbNetG, weights_init
 import utils
 from utils import log
@@ -26,7 +26,7 @@ if len(sys.argv)>1:
     print("Output prefix: {}".format(prefix))
 
 expo = 5
-dataset = TurbDataset(None, mode=TurbDataset.TEST, dataDirTest="../data/test/")
+dataset = SlicesDataset(None, mode=SlicesDataset.TEST, dataDirTest="../data/test/")
 testLoader = DataLoader(dataset, batch_size=1, shuffle=False)
 
 targets = torch.FloatTensor(1, 3, 128, 128)

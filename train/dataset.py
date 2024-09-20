@@ -1,10 +1,5 @@
-################
-#
-# Deep Flow Prediction - N. Thuerey, K. Weissenov, H. Mehrotra, N. Mainali, L. Prantl, X. Hu (TUM)
-#
-# Dataset handling
-#
-################
+import json
+import os
 
 from torch.utils.data import Dataset
 import numpy as np
@@ -12,98 +7,10 @@ from os import listdir
 import random
 
 
-# compute absolute of inputs or targets
-def find_absmax(data, use_targets, x):
-    maxval = 0
-    for i in range(data.totalLength):
-        if use_targets == 0:
-            temp_tensor = data.inputs[i]
-        else:
-            temp_tensor = data.targets[i]
-        temp_max = np.max(np.abs(temp_tensor[x]))
-        if temp_max > maxval:
-            maxval = temp_max
-    return maxval
-
-
-def LoaderNormalizer(data, isTest=False, shuffle=0):
-    """
-    # data: pass TurbDataset object with initialized dataDir / dataDirTest paths
-    # train: when off, process as test data (first load regular for normalization if needed, then replace by test data)
-    """
-
-    # load single directory
-    files = listdir(data.dataDir)
-    files.sort()
-    for i in range(shuffle):
-        random.shuffle(files)
-
-    data.totalLength = len(files)
-    data.inputs = np.empty((len(files), 2, 128, 128))
-    data.targets = np.empty((len(files), 3, 128, 128))
-    data.thicknesses = np.empty(len(files))
-    data.slice_indexes = np.empty(len(files))
-
-    print("Loading {:d} training files from {:s} ...".format(data.totalLength, data.dataDir))
-
-    for i, file in enumerate(files):
-        npfile = np.load(data.dataDir + file)
-        d = npfile['a']
-        data.inputs[i] = d[0:2]
-        data.targets[i] = d[2:5]
-        data.thicknesses[i] = int(file.split("_")[1])
-        data.slice_indexes[i] = int(file.split("_")[-1].split(".")[0])
-    print("Number of training data:", len(data.inputs))
-
-    data.max_inputs_0 = find_absmax(data, 0, 0)
-    data.max_inputs_1 = find_absmax(data, 0, 1)
-    print("Max training sdf = {:.5f}; Max training dP =  {:.1f}".format(data.max_inputs_0, data.max_inputs_1))
-
-    data.max_targets_0 = find_absmax(data, 1, 0)
-    data.max_targets_1 = find_absmax(data, 1, 1)
-    data.max_targets_2 = find_absmax(data, 1, 2)
-    print("Maxima training targets " + format([data.max_targets_0, data.max_targets_1, data.max_targets_2]))
-
-    if not isTest:
-        print("Building Training Dataset ..")
-
-        data.inputs[:, 0, :, :] *= (1.0 / data.max_inputs_0)
-        data.inputs[:, 1, :, :] *= (1.0 / data.max_inputs_1)
-
-        data.targets[:, 0, :, :] *= (1.0 / data.max_targets_0)
-        data.targets[:, 1, :, :] *= (1.0 / data.max_targets_1)
-        data.targets[:, 2, :, :] *= (1.0 / data.max_targets_2)
-
-    else:
-        files = listdir(data.dataDirTest)
-        files.sort()
-        data.totalLength = len(files)
-        print("Loading {:d} test files from {:s} ...".format(data.totalLength, data.dataDirTest))
-        data.inputs = np.empty((len(files), 2, 128, 128))
-        data.targets = np.empty((len(files), 3, 128, 128))
-        data.thicknesses = np.empty(len(files))
-        data.slice_indexes = np.empty(len(files))
-        for i, file in enumerate(files):
-            npfile = np.load(data.dataDirTest + file)
-            d = npfile['a']
-            data.inputs[i] = d[0:2]
-            data.targets[i] = d[2:5]
-            data.thicknesses[i] = int(file.split("_")[1])
-            data.slice_indexes[i] = int(file.split("_")[-1].split(".")[0])
-
-        print("Building Test Dataset ..")
-        data.inputs[:, 0, :, :] *= (1.0 / data.max_inputs_0)
-        data.inputs[:, 1, :, :] *= (1.0 / data.max_inputs_1)
-
-        data.targets[:, 0, :, :] *= (1.0 / data.max_targets_0)
-        data.targets[:, 1, :, :] *= (1.0 / data.max_targets_1)
-        data.targets[:, 2, :, :] *= (1.0 / data.max_targets_2)
-
-    print("Data stats, input  mean %f, max  %f;   targets mean %f , max %f " % (
-        np.mean(np.abs(data.inputs), keepdims=False), np.max(np.abs(data.inputs), keepdims=False),
-        np.mean(np.abs(data.targets), keepdims=False), np.max(np.abs(data.targets), keepdims=False)))
-
-    return data
+def load_normalization_parameters(experiment_directory):
+    with open(os.path.join(experiment_directory, "normalization.json"), "r") as f:
+        normalization_parameters = json.load(f)
+    return normalization_parameters
 
 
 class SlicesDataset(Dataset):
@@ -111,26 +18,36 @@ class SlicesDataset(Dataset):
     TRAIN = 0
     TEST = 2
 
-    def __init__(self, mode=TRAIN, dataDir="../data/train/", dataDirTest="../data/test/", shuffle=0):
+    def __init__(self, dataDir,  mode=TRAIN,  shuffle=0, normalization_parameters=None):
         """
         :param mode: TRAIN|TEST , toggle regular 80/20 split for training & validation data, or load test data
-        :param dataDir: directory containing training data
-        :param dataDirTest: second directory containing test data , needs training dir for normalization
+        :param dataDir: directory containing  data
         """
         if not (mode == self.TRAIN or mode == self.TEST):
             print("Error - TurbDataset invalid mode " + format(mode))
             exit(1)
 
         self.mode = mode
+        self.shuffle = shuffle
         self.dataDir = dataDir
-        self.dataDirTest = dataDirTest  # only for mode==self.TEST
+        self.files = listdir(self.dataDir)
+        self.totalLength = len(self.files)
 
-        # load & normalize data
-        self = LoaderNormalizer(self, isTest=(mode == self.TEST), shuffle=shuffle)
+        self.inputs = np.empty((self.totalLength, 2, 128, 128))
+        self.targets = np.empty((self.totalLength, 3, 128, 128))
+        self.thicknesses = np.empty(self.totalLength)
+        self.slice_indexes = np.empty(self.totalLength)
+
+        self.load_data()
+
+        self.normalization_parameters = normalization_parameters if normalization_parameters is not None \
+            else self.get_normalization_parameters()
+
+        self.normalize()
 
         if not self.mode == self.TEST:
             print("Splitting 80/20")
-            # split for train/validation sets (80/20) , max 400
+            # split for train/validation sets (80/20)
             targetLength = self.totalLength - int(self.totalLength * 0.2)
 
             self.valiInputs = self.inputs[targetLength:]
@@ -147,17 +64,63 @@ class SlicesDataset(Dataset):
     def __getitem__(self, idx):
         return self.inputs[idx], self.targets[idx]
 
-    #  reverts normalization 
+    def load_data(self):
+        # load single directory
+        files = self.files
+        for i in range(self.shuffle):
+            random.shuffle(files)
+
+        print("Loading {:d} training files from {:s} ...".format(self.totalLength, self.dataDir))
+
+        for i, file in enumerate(files):
+            np_file = np.load(self.dataDir + file)
+            d = np_file['a']
+            self.inputs[i] = d[0:2]
+            self.targets[i] = d[2:5]
+            self.thicknesses[i] = int(file.split("_")[1])
+            self.slice_indexes[i] = int(file.split("_")[-1].split(".")[0])
+        print("Number of training data:", len(self.inputs))
+
+    def get_normalization_parameters(self):
+        print("Getting normalization parameters from loaded data")
+        max_inputs_0 = np.max(np.abs(self.inputs[:, 0, :, :]))
+        max_inputs_1 = np.max(np.abs(self.inputs[:, 1, :, :]))
+        print("Max training sdf = {:.5f}; Max training dP =  {:.1f}".format(max_inputs_0, max_inputs_1))
+
+        max_targets_0 = np.max(np.abs(self.targets[:, 0, :, :]))
+        max_targets_1 = np.max(np.abs(self.targets[:, 1, :, :]))
+        max_targets_2 = np.max(np.abs(self.targets[:, 2, :, :]))
+        print("Maxima training targets " + format([max_targets_0, max_targets_1, max_targets_2]))
+
+        return {"max_input_0": max_inputs_0, "max_input_1": max_inputs_1,
+                "max_target_0": max_targets_0, "max_target_1": max_targets_1, "max_target_2": max_targets_2}
+
+    def normalize(self):
+        self.inputs[:, 0, :, :] *= (1.0 / self.normalization_parameters.get("max_input_0"))
+        self.inputs[:, 1, :, :] *= (1.0 / self.normalization_parameters.get("max_input_1"))
+
+        self.targets[:, 0, :, :] *= (1.0 / self.normalization_parameters.get("max_target_0"))
+        self.targets[:, 1, :, :] *= (1.0 / self.normalization_parameters("max_target_1"))
+        self.targets[:, 2, :, :] *= (1.0 / self.normalization_parameters.get("max_target_2"))
+
+        print("Data stats, input  mean %f, max  %f;   targets mean %f , max %f " % (
+            np.mean(np.abs(self.inputs), keepdims=False), np.max(np.abs(self.inputs), keepdims=False),
+            np.mean(np.abs(self.targets), keepdims=False), np.max(np.abs(self.targets), keepdims=False)))
+
     def denormalize(self, data):
         a = data.copy()
-        a[0, :, :] /= (1.0 / self.max_targets_0)
-        a[1, :, :] /= (1.0 / self.max_targets_1)
-        a[2, :, :] /= (1.0 / self.max_targets_2)
+        a[0, :, :] /= (1.0 / self.normalization_parameters.get("max_target_0"))
+        a[1, :, :] /= (1.0 / self.normalization_parameters.get("max_target_1"))
+        a[2, :, :] /= (1.0 / self.normalization_parameters.get("max_target_2"))
 
         return a
 
+    def save_normalization_parameters(self, experiment_directory):
+        with open(os.path.join(experiment_directory, "normalization_parameters.json"), "w") as f:
+            json.dump(self.normalization_parameters, f)
 
-class ValiDataset(SlicesDataset):
+
+class ValiDataset(Dataset):
     def __init__(self, dataset):
         self.inputs = dataset.valiInputs
         self.targets = dataset.valiTargets

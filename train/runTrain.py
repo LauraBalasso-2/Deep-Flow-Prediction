@@ -69,10 +69,11 @@ if device == "cuda":
     torch.cuda.manual_seed_all(seed)
 # torch.backends.cudnn.deterministic=True # warning, slower
 
-# create pytorch data object with dfp dataset
 data = dataset.SlicesDataset(dataDir="/home/laura/exclude_backup/gyroids/sdf_velocity_dP_slices/train/",
-                             dataDirTest="/home/laura/exclude_backup/gyroids/sdf_velocity_dP_slices/test/",
+                             mode=0,
                              shuffle=0)
+
+data.save_normalization_parameters(experiment_directory)
 
 trainLoader = DataLoader(data, batch_size=batch_size, shuffle=True, drop_last=True)
 print("Training batches: {}".format(len(trainLoader)))

@@ -43,10 +43,11 @@ netG.eval()
 
 batch_size = 1
 
-dataValidation = dataset.SlicesDataset(dataDir="/home/laura/exclude_backup/gyroids/sdf_velocity_dP_slices/train/",
-                                       dataDirTest="/home/laura/exclude_backup/gyroids/sdf_velocity_dP_slices/test/",
-                                       shuffle=1,
-                                       mode=2)
+norm_params = dataset.load_normalization_parameters(experiment_directory=experiment_directory)
+dataValidation = dataset.SlicesDataset(dataDir="/home/laura/exclude_backup/gyroids/sdf_velocity_dP_slices/test/",
+                                       shuffle=0,
+                                       mode=2,
+                                       normalization_parameters=norm_params)
 valiLoader = DataLoader(dataValidation, batch_size=batch_size, shuffle=False, drop_last=True)
 print("Validation batches: {}".format(len(valiLoader)))
 
@@ -75,7 +76,7 @@ for i, validata in enumerate(valiLoader, 0):
     loss_x.append(lossL1_x)
     loss_y.append(lossL1_y)
     loss_z.append(lossL1_z)
-    original_dp = inputs[:, 1, :, :] * dataValidation.max_inputs_1
+    original_dp = inputs[:, 1, :, :] * norm_params.get("max_input_1")
 
 argmin_loss = np.argmin(loss_vector)
 argmax_loss = np.argmax(loss_vector)

@@ -7,8 +7,10 @@
 ################
 
 import argparse
+import json
 import os
 import random
+import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -49,7 +51,6 @@ batch_size = specs['batch_size']
 lrG = specs['learning_rate']
 decayLr = specs['lr_decay']
 expo = specs["unet_channel_exponent"]
-saveL1 = False
 
 dropout = specs["dropout"]
 doLoad = ""  # optional, path to pre-trained model
@@ -58,7 +59,6 @@ print("LR: {}".format(lrG))
 print("LR decay: {}".format(decayLr))
 print("Dropout: {}".format(dropout))
 
-##########################
 
 seed = specs["random_seed"]
 print("Random seed: {}".format(seed))
@@ -69,7 +69,12 @@ if device == "cuda":
     torch.cuda.manual_seed_all(seed)
 # torch.backends.cudnn.deterministic=True # warning, slower
 
-data = dataset.SlicesDataset(dataDir="/home/laura/exclude_backup/gyroids/sdf_velocity_dP_slices/train/",
+sys.stdout.flush()
+
+with open(specs["train_split"], "r") as f:
+    train_split = json.load(f)
+data = dataset.SlicesDataset(dataDir=specs["data_source"],
+                             split=train_split,
                              mode=0,
                              shuffle=0)
 
@@ -81,6 +86,8 @@ dataValidation = dataset.ValiDataset(data)
 valiLoader = DataLoader(dataValidation, batch_size=batch_size, shuffle=False, drop_last=True)
 print("Validation batches: {}".format(len(valiLoader)))
 
+sys.stdout.flush()
+
 # setup training
 epochs = specs["epochs"]
 netG = utils.set_device(UNet(channelExponent=expo, dropout=dropout), device=device)
@@ -88,6 +95,8 @@ print(netG)  # print full net
 model_parameters = filter(lambda p: p.requires_grad, netG.parameters())
 params = sum([np.prod(p.size()) for p in model_parameters])
 print("Initialized UNet with {} trainable params ".format(params))
+
+sys.stdout.flush()
 
 netG.apply(weights_init)
 if len(doLoad) > 0:
@@ -106,7 +115,7 @@ inputs = utils.set_device(Variable(torch.FloatTensor(batch_size, 2, 128, 128)), 
 train_loss_list = []
 val_loss_list = []
 for epoch in range(epochs):
-    print("Starting epoch {} / {}".format((epoch + 1), epochs))
+    print("Starting epoch {} / {}".format((epoch + 1), epochs), flush=True)
 
     netG.train()
     L1_accum = 0.0
@@ -138,6 +147,8 @@ for epoch in range(epochs):
         if i == len(trainLoader) - 1:
             logline = "Epoch: {}, batch-idx: {}, L1: {}\n".format(epoch, i, lossL1viz)
             print(logline)
+        if epoch % 20 == 0:
+            sys.stdout.flush()
 
     # validation
     netG.eval()
@@ -155,30 +166,11 @@ for epoch in range(epochs):
         lossL1 = criterionL1(outputs, targets, inputs[:, :1, :, :])
         L1val_accum += lossL1.item()
 
-        if epoch % 50 == 0 and i == 0:
-            input_ndarray = inputs_cpu.cpu().numpy()[0]
-            outputs_denormalized = data.denormalize(outputs_cpu[0])
-            targets_denormalized = data.denormalize(targets_cpu.cpu().numpy()[0])
-
-            utils.makeDirs(["results_train"])
-            # utils.imageOut("results_train/epoch{}_{}".format(epoch, i), outputs_cpu[0], targets_cpu.cpu().numpy()[0],
-            #                saveTargets=True)
-            utils.save_true_pred_img("results_train/epoch{}_{}".format(epoch, i),
-                                     outputs_denormalized,
-                                     targets_denormalized,
-                                     input_ndarray[0].reshape(128, 128))
-
-    # data for graph plotting
     L1_accum /= len(trainLoader)
     L1val_accum /= len(valiLoader)
     train_loss_list.append(L1_accum)
     val_loss_list.append(L1val_accum)
-    if saveL1:
-        if epoch == 0:
-            utils.resetLog(os.path.join(experiment_directory, "L1.txt"))
-            utils.resetLog(os.path.join(experiment_directory, "L1val.txt"))
-        utils.log(os.path.join(experiment_directory, "L1.txt", "{} ".format(L1_accum)), False)
-        utils.log(os.path.join(experiment_directory, "L1val.txt", "{} ".format(L1val_accum)), False)
+
 
 plt.plot(train_loss_list)
 plt.plot(val_loss_list)

@@ -18,7 +18,7 @@ class SlicesDataset(Dataset):
     TRAIN = 0
     TEST = 2
 
-    def __init__(self, dataDir,  mode=TRAIN,  shuffle=0, normalization_parameters=None):
+    def __init__(self, dataDir, split=None,  mode=TRAIN,  shuffle=0, normalization_parameters=None):
         """
         :param mode: TRAIN|TEST , toggle regular 80/20 split for training & validation data, or load test data
         :param dataDir: directory containing  data
@@ -30,7 +30,7 @@ class SlicesDataset(Dataset):
         self.mode = mode
         self.shuffle = shuffle
         self.dataDir = dataDir
-        self.files = listdir(self.dataDir)
+        self.files = listdir(self.dataDir) if split is None else self.get_files_list(split)
         self.totalLength = len(self.files)
 
         self.inputs = np.empty((self.totalLength, 2, 128, 128))
@@ -73,7 +73,7 @@ class SlicesDataset(Dataset):
         print("Loading {:d} training files from {:s} ...".format(self.totalLength, self.dataDir))
 
         for i, file in enumerate(files):
-            np_file = np.load(self.dataDir + file)
+            np_file = np.load(os.path.join(self.dataDir, file))
             d = np_file['a']
             self.inputs[i] = d[0:2]
             self.targets[i] = d[2:5]
@@ -118,6 +118,16 @@ class SlicesDataset(Dataset):
     def save_normalization_parameters(self, experiment_directory):
         with open(os.path.join(experiment_directory, "normalization_parameters.json"), "w") as f:
             json.dump(self.normalization_parameters, f)
+
+    def get_files_list(self, split):
+        npz_files = []
+        for dataset in split:
+            for instance_name in sorted(split[dataset]):
+                instance_filename = os.path.join(dataset, instance_name + ".npz")
+                if not os.path.isfile(os.path.join(self.dataDir, instance_filename)):
+                    print("Requested non-existent file '{}'".format(instance_filename))
+                npz_files.append(instance_filename)
+        return npz_files
 
 
 class ValiDataset(Dataset):

@@ -44,7 +44,8 @@ netG.eval()
 batch_size = 1
 
 norm_params = dataset.load_normalization_parameters(experiment_directory=experiment_directory)
-dataValidation = dataset.SlicesDataset(dataDir="/home/laura/exclude_backup/gyroids/sdf_velocity_dP_slices/test/",
+dataValidation = dataset.SlicesDataset(dataDir="/home/laura/exclude_backup/gyroids/sdf_velocity_dP_slices_reshaped"
+                                               "/test/",
                                        shuffle=0,
                                        mode=2,
                                        normalization_parameters=norm_params)

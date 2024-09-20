@@ -44,6 +44,8 @@ def LoaderNormalizer(data, isTest=False, shuffle=0):
     data.thicknesses = np.empty(len(files))
     data.slice_indexes = np.empty(len(files))
 
+    print("Loading {:d} training files from {:s} ...".format(data.totalLength, data.dataDir))
+
     for i, file in enumerate(files):
         npfile = np.load(data.dataDir + file)
         d = npfile['a']
@@ -63,6 +65,8 @@ def LoaderNormalizer(data, isTest=False, shuffle=0):
     print("Maxima training targets " + format([data.max_targets_0, data.max_targets_1, data.max_targets_2]))
 
     if not isTest:
+        print("Building Training Dataset ..")
+
         data.inputs[:, 0, :, :] *= (1.0 / data.max_inputs_0)
         data.inputs[:, 1, :, :] *= (1.0 / data.max_inputs_1)
 
@@ -74,6 +78,7 @@ def LoaderNormalizer(data, isTest=False, shuffle=0):
         files = listdir(data.dataDirTest)
         files.sort()
         data.totalLength = len(files)
+        print("Loading {:d} test files from {:s} ...".format(data.totalLength, data.dataDirTest))
         data.inputs = np.empty((len(files), 2, 128, 128))
         data.targets = np.empty((len(files), 3, 128, 128))
         data.thicknesses = np.empty(len(files))
@@ -86,6 +91,7 @@ def LoaderNormalizer(data, isTest=False, shuffle=0):
             data.thicknesses[i] = int(file.split("_")[1])
             data.slice_indexes[i] = int(file.split("_")[-1].split(".")[0])
 
+        print("Building Test Dataset ..")
         data.inputs[:, 0, :, :] *= (1.0 / data.max_inputs_0)
         data.inputs[:, 1, :, :] *= (1.0 / data.max_inputs_1)
 
@@ -123,6 +129,7 @@ class SlicesDataset(Dataset):
         self = LoaderNormalizer(self, isTest=(mode == self.TEST), shuffle=shuffle)
 
         if not self.mode == self.TEST:
+            print("Splitting 80/20")
             # split for train/validation sets (80/20) , max 400
             targetLength = self.totalLength - int(self.totalLength * 0.2)
 

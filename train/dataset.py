@@ -100,7 +100,7 @@ class SlicesDataset(Dataset):
         self.inputs[:, 1, :, :] *= (1.0 / self.normalization_parameters.get("max_input_1"))
 
         self.targets[:, 0, :, :] *= (1.0 / self.normalization_parameters.get("max_target_0"))
-        self.targets[:, 1, :, :] *= (1.0 / self.normalization_parameters("max_target_1"))
+        self.targets[:, 1, :, :] *= (1.0 / self.normalization_parameters.get("max_target_1"))
         self.targets[:, 2, :, :] *= (1.0 / self.normalization_parameters.get("max_target_2"))
 
         print("Data stats, input  mean %f, max  %f;   targets mean %f , max %f " % (

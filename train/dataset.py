@@ -124,7 +124,7 @@ class SlicesDataset(Dataset):
 
         if not self.mode == self.TEST:
             # split for train/validation sets (80/20) , max 400
-            targetLength = self.totalLength - min(int(self.totalLength * 0.2), 400)
+            targetLength = self.totalLength - int(self.totalLength * 0.2)
 
             self.valiInputs = self.inputs[targetLength:]
             self.valiTargets = self.targets[targetLength:]
@@ -152,7 +152,6 @@ class SlicesDataset(Dataset):
 
 class ValiDataset(SlicesDataset):
     def __init__(self, dataset):
-        super().__init__()
         self.inputs = dataset.valiInputs
         self.targets = dataset.valiTargets
         self.totalLength = dataset.valiLength

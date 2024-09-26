@@ -77,8 +77,9 @@ class SlicesDataset(Dataset):
             d = np_file['a']
             self.inputs[i] = d[0:2]
             self.targets[i] = d[2:5]
-            self.thicknesses[i] = int(file.split("_")[1])
-            self.slice_indexes[i] = int(file.split("_")[-1].split(".")[0])
+            sample_name = file.split("/")[-1].split(".")[0]
+            self.thicknesses[i] = int(sample_name.split("_")[1])
+            self.slice_indexes[i] = int(sample_name.split("_")[-1])
         print("Number of training data:", len(self.inputs))
 
     def get_normalization_parameters(self):

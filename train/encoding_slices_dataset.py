@@ -11,7 +11,7 @@ from utils import set_device
 
 
 def load_normalization_parameters(experiment_directory):
-    with open(os.path.join(experiment_directory, "normalization.json"), "r") as f:
+    with open(os.path.join(experiment_directory, "normalization_parameters.json"), "r") as f:
         normalization_parameters = json.load(f)
     return normalization_parameters
 

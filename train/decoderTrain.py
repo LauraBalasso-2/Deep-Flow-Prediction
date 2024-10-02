@@ -16,31 +16,29 @@ import encoding_slices_dataset
 import utils
 from decoder_architecture import Decoder
 from uNet_architecture import weights_init
-#
-# arg_parser = argparse.ArgumentParser(description="Train U-Net")
-# arg_parser.add_argument(
-#     "--device",
-#     dest="device",
-#     default="cpu",
-#     help="Device on which the training is performed. Must be cpu or gpu."
-# )
-# arg_parser.add_argument(
-#     "--experiment",
-#     "-e",
-#     dest="experiment_directory",
-#     required=True,
-#     help="The experiment directory. This directory should include "
-#          + "experiment specifications in 'specs.json', and logging will be "
-#          + "done in this directory as well.",
-# )
-#
-# args = arg_parser.parse_args()
-#
-# device = args.device
-# experiment_directory = args.experiment_directory
 
-device = "cpu"
-experiment_directory = "/home/laura/exclude_backup/pycharm_projects_deployment/Deep-Flow-Prediction/experiments/"
+arg_parser = argparse.ArgumentParser(description="Train U-Net")
+arg_parser.add_argument(
+    "--device",
+    dest="device",
+    default="cpu",
+    help="Device on which the training is performed. Must be cpu or gpu."
+)
+arg_parser.add_argument(
+    "--experiment",
+    "-e",
+    dest="experiment_directory",
+    required=True,
+    help="The experiment directory. This directory should include "
+         + "experiment specifications in 'specs.json', and logging will be "
+         + "done in this directory as well.",
+)
+
+args = arg_parser.parse_args()
+
+device = args.device
+experiment_directory = args.experiment_directory
+
 
 specs = utils.load_experiment_specifications(experiment_directory)
 
@@ -145,6 +143,8 @@ for epoch in range(epochs):
             print(logline)
         if epoch % 20 == 0:
             sys.stdout.flush()
+        if epoch % 100 == 0:
+            torch.save(netD.state_dict(), os.path.join(experiment_directory, "model_D"))
 
     # validation
     netD.eval()

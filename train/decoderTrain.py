@@ -96,7 +96,7 @@ if len(doLoad) > 0:
     netD.load_state_dict(torch.load(doLoad))
     print("Loaded model " + doLoad)
 
-# criterionL1 = utils.set_device(utils.CustomWeightedL1Loss(0.0, sdf_threshold=0.0001), device=device)
+criterionL1 = utils.set_device(utils.CustomWeightedL1Loss(0.0, sdf_threshold=0.0001), device=device)
 criterion = nn.MSELoss()
 
 optimizer = optim.Adam(netD.parameters(), lr=lrG, betas=(0.5, 0.999), weight_decay=0.0)
@@ -114,9 +114,10 @@ for epoch in range(epochs):
     netD.train()
     L1_accum = 0.0
     for i, traindata in enumerate(trainLoader, 0):
-        inputs_cpu, targets_cpu = traindata
+        inputs_cpu, targets_cpu, sdf_cpu = traindata
         inputs_cpu = utils.set_device(inputs_cpu.float(), device)
         targets_cpu = utils.set_device(targets_cpu.float(), device)
+        sdf_cpu = utils.set_device(sdf_cpu.float(), device)
         inputs.data.resize_as_(inputs_cpu).copy_(inputs_cpu)
         targets.data.resize_as_(targets_cpu).copy_(targets_cpu)
 
@@ -130,7 +131,7 @@ for epoch in range(epochs):
         netD.zero_grad()
         gen_out = netD(inputs)
 
-        lossL1 = criterion(gen_out, targets) #criterionL1(gen_out, targets, inputs[:, :1, :, :])
+        lossL1 = criterionL1(gen_out, targets, sdf_cpu)
         lossL1.backward()
 
         optimizer.step()
@@ -150,16 +151,17 @@ for epoch in range(epochs):
     netD.eval()
     L1val_accum = 0.0
     for i, validata in enumerate(valiLoader, 0):
-        inputs_cpu, targets_cpu = validata
+        inputs_cpu, targets_cpu, sdf_cpu = validata
         inputs_cpu = utils.set_device(inputs_cpu.float(), device)
         targets_cpu = utils.set_device(targets_cpu.float(), device)
+        sdf_cpu = utils.set_device(sdf_cpu.float(), device)
         inputs.data.resize_as_(inputs_cpu).copy_(inputs_cpu)
         targets.data.resize_as_(targets_cpu).copy_(targets_cpu)
 
         outputs = netD(inputs)
         outputs_cpu = outputs.data.cpu().numpy()
 
-        lossL1 = criterion(outputs, targets) # criterionL1(outputs, targets, inputs[:, :1, :, :])
+        lossL1 = criterionL1(outputs, targets, sdf_cpu)
         L1val_accum += lossL1.item()
 
     L1_accum /= len(trainLoader)

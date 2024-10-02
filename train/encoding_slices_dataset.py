@@ -37,9 +37,10 @@ class LatentSlicesDataset(Dataset):
         self.files = listdir(self.dataDir) if split is None else self.get_files_list(split)
         self.totalLength = len(self.files)
 
-        self.latent_codes, self.latent_codes_thickness = self.load_latent_codes(latent_codes_dir)
+        self.latent_codes, self.latent_codes_thickness = self.load_train_validation_encoding(latent_codes_dir)
         self.code_length = self.latent_codes.shape[1]
         self.inputs = np.empty((self.totalLength, self.code_length + 2, 1, 1))
+        self.sdf = np.empty((self.totalLength, 1, 128, 128))
         self.targets = np.empty((self.totalLength, 3, 128, 128))
         self.thicknesses = np.empty(self.totalLength)
         self.slice_indexes = np.empty(self.totalLength)
@@ -58,17 +59,19 @@ class LatentSlicesDataset(Dataset):
 
             self.valiInputs = self.inputs[targetLength:]
             self.valiTargets = self.targets[targetLength:]
+            self.valiSdf = self.sdf[targetLength:]
             self.valiLength = self.totalLength - targetLength
 
             self.inputs = self.inputs[:targetLength]
             self.targets = self.targets[:targetLength]
+            self.sdf = self.sdf[:targetLength]
             self.totalLength = self.inputs.shape[0]
 
     def __len__(self):
         return self.totalLength
 
     def __getitem__(self, idx):
-        return self.inputs[idx], self.targets[idx]
+        return self.inputs[idx], self.targets[idx], self.sdf[idx]
 
     def load_data(self):
         # load single directory
@@ -81,6 +84,7 @@ class LatentSlicesDataset(Dataset):
         for i, file in enumerate(files):
             np_file = np.load(os.path.join(self.dataDir, file))
             d = np_file['a']
+            self.sdf = d[0]
             self.targets[i] = d[2:5]
             sample_name = file.split("/")[-1].split(".")[0]
             self.thicknesses[i] = sample_name.split("_")[1]
@@ -159,6 +163,12 @@ class LatentSlicesDataset(Dataset):
             lat_vecs.load_state_dict(data["latent_codes"])
             return lat_vecs.weight.data.detach(), thickness_idx
 
+    def load_train_validation_encoding(self, encoding_dir):
+        latent_codes_train, latent_codes_thickness_train = self.load_latent_codes(os.path.join(encoding_dir, "LatentCodes"))
+        latent_codes_validation, latent_codes_thickness_validation = self.load_latent_codes(os.path.join(encoding_dir, "LatentCodes_validation"))
+
+        return np.row_stack((latent_codes_train, latent_codes_validation)), latent_codes_thickness_train + latent_codes_thickness_validation
+
     @property
     def latent_size(self):
         return self.latent_codes.shape[1]
@@ -168,10 +178,11 @@ class ValiDataset(Dataset):
     def __init__(self, dataset):
         self.inputs = dataset.valiInputs
         self.targets = dataset.valiTargets
+        self.sdf = dataset.valiSdf
         self.totalLength = dataset.valiLength
 
     def __len__(self):
         return self.totalLength
 
     def __getitem__(self, idx):
-        return self.inputs[idx], self.targets[idx]
+        return self.inputs[idx], self.targets[idx], self.sdf[idx]

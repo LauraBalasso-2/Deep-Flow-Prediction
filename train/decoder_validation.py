@@ -102,7 +102,7 @@ for i, validata in enumerate(valiLoader, 0):
     if i not in stats_idx.keys():
         continue
     print(stats_idx.get(i), "error on index {}".format(i), "with value ", loss_vector[i])
-    inputs_cpu, targets_cpu = validata
+    inputs_cpu, targets_cpu, sdf = validata
     inputs.data.copy_(inputs_cpu.float())
     targets.data.copy_(targets_cpu.float())
 

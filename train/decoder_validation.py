@@ -12,7 +12,7 @@ from torch.autograd import Variable
 import numpy as np
 import utils
 
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 arg_parser = argparse.ArgumentParser(description="U-Net validation")
 arg_parser.add_argument(

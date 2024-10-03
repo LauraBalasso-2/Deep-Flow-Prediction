@@ -1,3 +1,4 @@
+import json
 import os.path
 import argparse
 
@@ -10,6 +11,7 @@ from decoder_architecture import Decoder
 from torch.autograd import Variable
 import numpy as np
 import utils
+
 #import matplotlib.pyplot as plt
 
 arg_parser = argparse.ArgumentParser(description="U-Net validation")
@@ -36,17 +38,18 @@ experiment_directory = args.experiment_directory
 
 specs = utils.load_experiment_specifications(experiment_directory)
 
-
 batch_size = 1
 
 norm_params = encoding_slices_dataset.load_normalization_parameters(experiment_directory=experiment_directory)
-dataValidation = encoding_slices_dataset.LatentSlicesDataset(
-    dataDir="/home/laura/exclude_backup/gyroids/sdf_velocity_dP_slices_reshaped/test/",
-    shuffle=0,
-    latent_codes_dir=specs["latent_code_dir"],
-    mode=2,
-    device=device,
-    normalization_parameters=norm_params)
+with open(specs["test_split"], "r") as f:
+    test_split = json.load(f)
+dataValidation = encoding_slices_dataset.LatentSlicesDataset(dataDir=specs["data_source"],
+                                                             shuffle=0,
+                                                             latent_codes_dir=specs["latent_code_dir"],
+                                                             mode=2,
+                                                             split=test_split,
+                                                             device=device,
+                                                             normalization_parameters=norm_params)
 
 valiLoader = DataLoader(dataValidation, batch_size=batch_size, shuffle=False, drop_last=True)
 print("Validation batches: {}".format(len(valiLoader)))
@@ -57,11 +60,10 @@ netG = Decoder(latent_size=dataValidation.latent_size)
 netG.load_state_dict(torch.load("model_D"))
 netG.eval()
 
-
 targets = Variable(torch.FloatTensor(batch_size, 3, 128, 128))
 inputs = Variable(torch.FloatTensor(batch_size, dataValidation.latent_size + 2, 1, 1))
 
-criterionL1 = nn.MSELoss #utils.CustomWeightedL1Loss(0.0, sdf_threshold=0.0)
+criterionL1 = nn.MSELoss  #utils.CustomWeightedL1Loss(0.0, sdf_threshold=0.0)
 loss_vector = []
 loss_x = []
 loss_y = []
@@ -75,9 +77,9 @@ for i, validata in enumerate(valiLoader, 0):
     outputs = netG(inputs)
     outputs_cpu = outputs.data.cpu().numpy()
 
-    lossL1_x = criterionL1(outputs[:, 0:1, :, :], targets[:, 0:1, :, :]).item()#, inputs[:, :1, :, :]).item()
-    lossL1_y = criterionL1(outputs[:, 1:2, :, :], targets[:, 1:2, :, :]).item()#, inputs[:, :1, :, :]).item()
-    lossL1_z = criterionL1(outputs[:, 2:3, :, :], targets[:, 2:3, :, :]).item()#, inputs[:, :1, :, :]).item()
+    lossL1_x = criterionL1(outputs[:, 0:1, :, :], targets[:, 0:1, :, :]).item()  #, inputs[:, :1, :, :]).item()
+    lossL1_y = criterionL1(outputs[:, 1:2, :, :], targets[:, 1:2, :, :]).item()  #, inputs[:, :1, :, :]).item()
+    lossL1_z = criterionL1(outputs[:, 2:3, :, :], targets[:, 2:3, :, :]).item()  #, inputs[:, :1, :, :]).item()
 
     loss_vector.append(np.mean([lossL1_x, lossL1_y, lossL1_z]))
     loss_x.append(lossL1_x)

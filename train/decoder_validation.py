@@ -85,7 +85,7 @@ for i, validata in enumerate(valiLoader, 0):
     loss_x.append(lossL1_x)
     loss_y.append(lossL1_y)
     loss_z.append(lossL1_z)
-    original_dp = inputs[:, 1, :, :] * norm_params.get("max_input_1")
+    original_dp = inputs[:, 1, :, :] * norm_params.get("max_input_dp")
 
 argmin_loss = np.argmin(loss_vector)
 argmax_loss = np.argmax(loss_vector)

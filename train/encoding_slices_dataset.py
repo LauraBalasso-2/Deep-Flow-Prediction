@@ -167,7 +167,7 @@ class LatentSlicesDataset(Dataset):
         latent_codes_train, latent_codes_thickness_train = self.load_latent_codes(os.path.join(encoding_dir, "LatentCodes"))
         latent_codes_validation, latent_codes_thickness_validation = self.load_latent_codes(os.path.join(encoding_dir, "LatentCodes_validation"))
 
-        return np.row_stack((latent_codes_train, latent_codes_validation)), latent_codes_thickness_train + latent_codes_thickness_validation
+        return np.row_stack(( latent_codes_train.detach().cpu(),  torch.cat(latent_codes_validation).detach().cpu())), latent_codes_thickness_train + latent_codes_thickness_validation
 
     @property
     def latent_size(self):

@@ -57,7 +57,7 @@ print("Validation batches: {}".format(len(valiLoader)))
 ## Load model
 dropout = specs['dropout']
 netG = Decoder(latent_size=dataValidation.latent_size)
-netG.load_state_dict(torch.load("model_D"))
+netG.load_state_dict(torch.load(os.path.join(experiment_directory, "model_D")))
 netG.eval()
 
 targets = Variable(torch.FloatTensor(batch_size, 3, 128, 128))

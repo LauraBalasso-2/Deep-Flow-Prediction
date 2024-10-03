@@ -63,23 +63,23 @@ netG.eval()
 targets = Variable(torch.FloatTensor(batch_size, 3, 128, 128))
 inputs = Variable(torch.FloatTensor(batch_size, dataValidation.latent_size + 2, 1, 1))
 
-criterionL1 = nn.MSELoss  #utils.CustomWeightedL1Loss(0.0, sdf_threshold=0.0)
+criterionL1 = utils.CustomWeightedL1Loss(0.0, sdf_threshold=0.0)
 loss_vector = []
 loss_x = []
 loss_y = []
 loss_z = []
 
 for i, validata in enumerate(valiLoader, 0):
-    inputs_cpu, targets_cpu = validata
+    inputs_cpu, targets_cpu, sdf = validata
     inputs.data.copy_(inputs_cpu.float())
     targets.data.copy_(targets_cpu.float())
 
     outputs = netG(inputs)
     outputs_cpu = outputs.data.cpu().numpy()
 
-    lossL1_x = criterionL1(outputs[:, 0:1, :, :], targets[:, 0:1, :, :]).item()  #, inputs[:, :1, :, :]).item()
-    lossL1_y = criterionL1(outputs[:, 1:2, :, :], targets[:, 1:2, :, :]).item()  #, inputs[:, :1, :, :]).item()
-    lossL1_z = criterionL1(outputs[:, 2:3, :, :], targets[:, 2:3, :, :]).item()  #, inputs[:, :1, :, :]).item()
+    lossL1_x = criterionL1(outputs[:, 0:1, :, :], targets[:, 0:1, :, :], sdf).item()
+    lossL1_y = criterionL1(outputs[:, 1:2, :, :], targets[:, 1:2, :, :], sdf).item()
+    lossL1_z = criterionL1(outputs[:, 2:3, :, :], targets[:, 2:3, :, :], sdf).item()
 
     loss_vector.append(np.mean([lossL1_x, lossL1_y, lossL1_z]))
     loss_x.append(lossL1_x)

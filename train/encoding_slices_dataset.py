@@ -67,6 +67,7 @@ class LatentSlicesDataset(Dataset):
             self.sdf = self.sdf[:targetLength]
             self.totalLength = self.inputs.shape[0]
 
+
     def __len__(self):
         return self.totalLength
 
@@ -84,7 +85,7 @@ class LatentSlicesDataset(Dataset):
         for i, file in enumerate(files):
             np_file = np.load(os.path.join(self.dataDir, file))
             d = np_file['a']
-            self.sdf = d[0]
+            self.sdf[i] = d[0]
             self.targets[i] = d[2:5]
             sample_name = file.split("/")[-1].split(".")[0]
             self.thicknesses[i] = sample_name.split("_")[1]

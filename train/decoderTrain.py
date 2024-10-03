@@ -146,6 +146,7 @@ for epoch in range(epochs):
             sys.stdout.flush()
         if epoch % 100 == 0:
             torch.save(netD.state_dict(), os.path.join(experiment_directory, "model_D"))
+            np.savetxt(os.path.join(experiment_directory, "loss_D.txt"), np.asarray(train_loss_list, val_loss_list))
 
     # validation
     netD.eval()

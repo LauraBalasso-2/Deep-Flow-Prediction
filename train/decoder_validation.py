@@ -108,7 +108,6 @@ for i, validata in enumerate(valiLoader, 0):
 
     outputs = netG(inputs)
     outputs_cpu = outputs.data.cpu().numpy()
-    input_ndarray = inputs_cpu.cpu().numpy()[0]
 
     outputs_denormalized = dataValidation.denormalize(outputs_cpu[0])
     targets_denormalized = dataValidation.denormalize(targets_cpu.cpu().numpy()[0])
@@ -116,7 +115,7 @@ for i, validata in enumerate(valiLoader, 0):
     utils.save_true_pred_img(os.path.join(validation_dir, stats_idx.get(i) + "_err_pred"),
                              outputs_denormalized,
                              targets_denormalized,
-                             input_ndarray[0].reshape(128, 128),
+                             sdf.reshape(128, 128),
                              smoothing=False)
 
 

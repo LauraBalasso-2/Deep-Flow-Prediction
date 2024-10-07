@@ -89,7 +89,7 @@ stats_idx = {argmin_loss: "min",
              argmax_loss: "max",
              arg_med_loss: "median"}
 
-validation_dir = "validation"
+validation_dir = os.path.join(experiment_directory, "validation")
 utils.makeDirs([validation_dir])
 
 for i, validata in enumerate(valiLoader, 0):

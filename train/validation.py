@@ -1,3 +1,4 @@
+import json
 import os.path
 import argparse
 
@@ -42,10 +43,11 @@ netG.load_state_dict(torch.load(os.path.join(experiment_directory,"model_U")))
 netG.eval()
 
 batch_size = 1
-
+with open(specs["test_split"], "r") as f:
+    test_split = json.load(f)
 norm_params = dataset.load_normalization_parameters(experiment_directory=experiment_directory)
-dataValidation = dataset.SlicesDataset(dataDir="/home/laura/exclude_backup/gyroids/sdf_velocity_dP_slices_reshaped"
-                                               "/test/",
+dataValidation = dataset.SlicesDataset(dataDir=specs["data_source"],
+                                       split=test_split,
                                        shuffle=0,
                                        mode=2,
                                        normalization_parameters=norm_params)

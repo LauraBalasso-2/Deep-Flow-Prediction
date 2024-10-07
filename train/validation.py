@@ -4,7 +4,7 @@ import argparse
 import dataset
 from torch.utils.data import DataLoader
 import torch
-from uNet_architecture import UNet
+from encoder_decoder import UNetNoSkip as UNet
 from torch.autograd import Variable
 import numpy as np
 import utils
@@ -38,7 +38,7 @@ specs = utils.load_experiment_specifications(experiment_directory)
 dropout = specs['dropout']
 expo = specs["unet_channel_exponent"]
 netG = UNet(channelExponent=expo, dropout=dropout)
-netG.load_state_dict(torch.load("modelG"))
+netG.load_state_dict(torch.load("model_U"))
 netG.eval()
 
 batch_size = 1

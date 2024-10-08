@@ -151,7 +151,7 @@ for epoch in range(epochs):
             sys.stdout.flush()
         if epoch % 100 == 0:
             torch.save(netG.state_dict(), os.path.join(experiment_directory, "model_U"))
-            np.savetxt(os.path.join(experiment_directory, "loss_U.txt"), np.asarray([train_loss_list, val_loss_list]))
+            np.savetxt(os.path.join(experiment_directory, "loss_log.txt"), np.asarray([train_loss_list, val_loss_list]))
 
     # validation
     netG.eval()

@@ -43,19 +43,23 @@ class Decoder(nn.Module):
         # Convolutional layer to transform input (N, 1, 1) into (512, 2, 2)
         self.conv_input = nn.Conv2d(input_size, channels * 8, kernel_size=1, stride=1, padding=0)
 
-        # Decoder layers (only upsampling parts, transposed=True)
-        self.dlayer6 = blockUNet(channels * 8, channels * 8, 'dlayer6', transposed=True, bn=True, relu=True,
-                                 dropout=dropout, size=2, pad=0)
-        self.dlayer5 = blockUNet(channels * 8, channels * 8, 'dlayer5', transposed=True, bn=True, relu=True,
-                                 dropout=dropout, size=2, pad=0)
-        self.dlayer4 = blockUNet(channels * 8, channels * 4, 'dlayer4', transposed=True, bn=True, relu=True,
-                                 dropout=dropout)
-        self.dlayer3 = blockUNet(channels * 4, channels * 2, 'dlayer3', transposed=True, bn=True, relu=True,
-                                 dropout=dropout)
-        self.dlayer2b = blockUNet(channels * 2, channels * 2, 'dlayer2b', transposed=True, bn=True, relu=True,
-                                  dropout=dropout)
-        self.dlayer2 = blockUNet(channels * 2, channels, 'dlayer2', transposed=True, bn=True, relu=True,
-                                 dropout=dropout)
+        # Additional decoder layers (doubling the original number of layers)
+        self.dlayer6 = blockUNet(channels * 8, channels * 8, 'dlayer6', transposed=True, bn=True, relu=True, size=2, pad=0)
+        self.dlayer6_extra = blockUNet(channels * 8, channels * 8, 'dlayer6_extra', transposed=True, bn=True, relu=True, size=2, pad=0)
+
+        self.dlayer5 = blockUNet(channels * 8, channels * 8, 'dlayer5', transposed=True, bn=True, relu=True, size=2, pad=0)
+        self.dlayer5_extra = blockUNet(channels * 8, channels * 8, 'dlayer5_extra', transposed=True, bn=True, relu=True, size=2, pad=0)
+
+        self.dlayer4 = blockUNet(channels * 8, channels * 4, 'dlayer4', transposed=True, bn=True, relu=True, size=4, pad=1)
+        self.dlayer4_extra = blockUNet(channels * 4, channels * 4, 'dlayer4_extra', transposed=True, bn=True, relu=True, size=4, pad=1)
+
+        self.dlayer3 = blockUNet(channels * 4, channels * 2, 'dlayer3', transposed=True, bn=True, relu=True, size=4, pad=1)
+        self.dlayer3_extra = blockUNet(channels * 2, channels * 2, 'dlayer3_extra', transposed=True, bn=True, relu=True, size=4, pad=1)
+
+        self.dlayer2b = blockUNet(channels * 2, channels * 2, 'dlayer2b', transposed=True, bn=True, relu=True, size=4, pad=1)
+        self.dlayer2b_extra = blockUNet(channels * 2, channels * 2, 'dlayer2b_extra', transposed=True, bn=True, relu=True, size=4, pad=1)
+
+        self.dlayer2 = blockUNet(channels * 2, channels, 'dlayer2', transposed=True, bn=True, relu=True, size=4, pad=1)
 
         self.dlayer1 = nn.Sequential()
         self.dlayer1.add_module('dlayer1_relu', nn.ReLU(inplace=True))
@@ -65,13 +69,23 @@ class Decoder(nn.Module):
         # Apply the first convolutional layer to transform input (N, 1, 1) to (channels * 8, 2, 2)
         x = self.conv_input(x)  # Shape: (batch_size, channels * 8, 1, 1)
 
-        # Pass through decoder layers
+        # Pass through extended decoder layers
         dout6 = self.dlayer6(x)
-        dout5 = self.dlayer5(dout6)
-        dout4 = self.dlayer4(dout5)
-        dout3 = self.dlayer3(dout4)
-        dout2b = self.dlayer2b(dout3)
-        dout2 = self.dlayer2(dout2b)
+        dout6_extra = self.dlayer6_extra(dout6)
+
+        dout5 = self.dlayer5(dout6_extra)
+        dout5_extra = self.dlayer5_extra(dout5)
+
+        dout4 = self.dlayer4(dout5_extra)
+        dout4_extra = self.dlayer4_extra(dout4)
+
+        dout3 = self.dlayer3(dout4_extra)
+        dout3_extra = self.dlayer3_extra(dout3)
+
+        dout2b = self.dlayer2b(dout3_extra)
+        dout2b_extra = self.dlayer2b_extra(dout2b)
+
+        dout2 = self.dlayer2(dout2b_extra)
         dout1 = self.dlayer1(dout2)
 
         return dout1

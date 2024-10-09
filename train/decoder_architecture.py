@@ -43,9 +43,8 @@ class Decoder(nn.Module):
         # Convolutional layer to transform input (N, 1, 1) into (512, 2, 2)
         self.conv_input = nn.Conv2d(input_size, channels * 8, kernel_size=1, stride=1, padding=0)
 
-        # Additional decoder layers (doubling the original number of layers)
+        # Remaining decoder layers (with dlayer6_extra removed)
         self.dlayer6 = blockUNet(channels * 8, channels * 8, 'dlayer6', transposed=True, bn=True, relu=True, size=2, pad=0)
-        self.dlayer6_extra = blockUNet(channels * 8, channels * 8, 'dlayer6_extra', transposed=True, bn=True, relu=True, size=2, pad=0)
 
         self.dlayer5 = blockUNet(channels * 8, channels * 8, 'dlayer5', transposed=True, bn=True, relu=True, size=2, pad=0)
         self.dlayer5_extra = blockUNet(channels * 8, channels * 8, 'dlayer5_extra', transposed=True, bn=True, relu=True, size=2, pad=0)
@@ -69,11 +68,10 @@ class Decoder(nn.Module):
         # Apply the first convolutional layer to transform input (N, 1, 1) to (channels * 8, 2, 2)
         x = self.conv_input(x)  # Shape: (batch_size, channels * 8, 1, 1)
 
-        # Pass through extended decoder layers
+        # Pass through reduced decoder layers
         dout6 = self.dlayer6(x)
-        dout6_extra = self.dlayer6_extra(dout6)
 
-        dout5 = self.dlayer5(dout6_extra)
+        dout5 = self.dlayer5(dout6)
         dout5_extra = self.dlayer5_extra(dout5)
 
         dout4 = self.dlayer4(dout5_extra)

@@ -57,9 +57,7 @@ class Decoder(nn.Module):
         self.dlayer2 = blockUNet(channels * 2, channels, 'dlayer2', transposed=True, bn=True, relu=True,
                                  dropout=dropout)
 
-        self.dlayer1 = nn.Sequential()
-        self.dlayer1.add_module('dlayer1_relu', nn.ReLU(inplace=True))
-        self.dlayer1.add_module('dlayer1_tconv', nn.ConvTranspose2d(channels, 3, 4, 2, 1, bias=True))
+        self.dlayer1 = blockUNet(channels, 3, 'dlayer1', transposed=True, bn=False, relu=True)
 
     def forward(self, x):
         # Apply the first convolutional layer to transform input (N, 1, 1) to (channels * 8, 2, 2)

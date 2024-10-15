@@ -129,7 +129,7 @@ for epoch in range(epochs):
                     g['lr'] = currLr
 
         netD.zero_grad()
-        gen_out = netD(inputs)
+        gen_out = netD(inputs, sdf_cpu)
 
         lossL1 = criterionL1(gen_out, targets, sdf_cpu)
         lossL1.backward()
@@ -159,7 +159,7 @@ for epoch in range(epochs):
         inputs.data.resize_as_(inputs_cpu).copy_(inputs_cpu)
         targets.data.resize_as_(targets_cpu).copy_(targets_cpu)
 
-        outputs = netD(inputs)
+        outputs = netD(inputs, sdf_cpu)
         outputs_cpu = outputs.data.cpu().numpy()
 
         lossL1 = criterionL1(outputs, targets, sdf_cpu)

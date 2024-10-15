@@ -58,8 +58,9 @@ class Decoder(nn.Module):
                                  dropout=dropout)
 
         self.dlayer1 = blockUNet(channels, 3, 'dlayer1', transposed=True, bn=False, relu=True)
+        self.dlayer0 = nn.Conv2d(4, 3, kernel_size=3, stride=1, padding=1, bias=False)
 
-    def forward(self, x):
+    def forward(self, x, sdf):
         # Apply the first convolutional layer to transform input (N, 1, 1) to (channels * 8, 2, 2)
         x = self.conv_input(x)  # Shape: (batch_size, channels * 8, 1, 1)
 
@@ -71,5 +72,6 @@ class Decoder(nn.Module):
         dout2b = self.dlayer2b(dout3)
         dout2 = self.dlayer2(dout2b)
         dout1 = self.dlayer1(dout2)
+        dout0 = self.dlayer0(torch.cat([dout1, sdf], dim=1))
 
-        return dout1
+        return dout0

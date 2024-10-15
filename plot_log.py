@@ -18,7 +18,7 @@ args = arg_parser.parse_args()
 experiment_directory = args.experiment_directory
 
 
-loss_log = os.path.join(experiment_directory, "loss_D.txt")
+loss_log = os.path.join(experiment_directory, "loss_log.txt")
 
 loss = np.loadtxt(loss_log)
 

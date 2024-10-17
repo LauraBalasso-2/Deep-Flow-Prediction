@@ -107,7 +107,7 @@ criterionL1 = utils.set_device(utils.CustomWeightedL1Loss(0.0, sdf_threshold=0.0
 
 optimizer = optim.Adam(netG.parameters(), lr=lrG, betas=(0.5, 0.999), weight_decay=0.0)
 
-targets = utils.set_device(Variable(torch.FloatTensor(batch_size, 3, 128, 128)), device=device)
+targets = utils.set_device(Variable(torch.FloatTensor(batch_size, 4, 128, 128)), device=device)
 inputs = utils.set_device(Variable(torch.FloatTensor(batch_size, 2, 128, 128)), device=device)
 
 ##########################

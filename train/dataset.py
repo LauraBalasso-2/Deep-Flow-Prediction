@@ -34,7 +34,7 @@ class SlicesDataset(Dataset):
         self.totalLength = len(self.files)
 
         self.inputs = np.empty((self.totalLength, 2, 128, 128))
-        self.targets = np.empty((self.totalLength, 3, 128, 128))
+        self.targets = np.empty((self.totalLength, 4, 128, 128))
         self.thicknesses = np.empty(self.totalLength)
         self.slice_indexes = np.empty(self.totalLength)
 
@@ -76,7 +76,8 @@ class SlicesDataset(Dataset):
             np_file = np.load(os.path.join(self.dataDir, file))
             d = np_file['a']
             self.inputs[i] = d[0:2]
-            self.targets[i] = d[2:5]
+            self.targets[i] = d[2:]
+            self.targets[i, -1, :, :] /= np.unique(self.inputs[i, 1, :, :])[0]
             sample_name = file.split("/")[-1].split(".")[0]
             self.thicknesses[i] = int(sample_name.split("_")[1])
             self.slice_indexes[i] = int(sample_name.split("_")[-1])
@@ -108,11 +109,12 @@ class SlicesDataset(Dataset):
             np.mean(np.abs(self.inputs), keepdims=False), np.max(np.abs(self.inputs), keepdims=False),
             np.mean(np.abs(self.targets), keepdims=False), np.max(np.abs(self.targets), keepdims=False)))
 
-    def denormalize(self, data):
+    def denormalize(self, data, deltaP):
         a = data.copy()
-        a[0, :, :] /= (1.0 / self.normalization_parameters.get("max_target_0"))
-        a[1, :, :] /= (1.0 / self.normalization_parameters.get("max_target_1"))
-        a[2, :, :] /= (1.0 / self.normalization_parameters.get("max_target_2"))
+        a[0, :, :] *= self.normalization_parameters.get("max_target_0")
+        a[1, :, :] *= self.normalization_parameters.get("max_target_1")
+        a[2, :, :] *= self.normalization_parameters.get("max_target_2")
+        a[3, :, :] *= deltaP
 
         return a
 

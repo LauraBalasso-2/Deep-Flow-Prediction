@@ -62,6 +62,7 @@ loss_vector = []
 loss_x = []
 loss_y = []
 loss_z = []
+loss_p = []
 
 for i, validata in enumerate(valiLoader, 0):
     inputs_cpu, targets_cpu = validata
@@ -74,12 +75,13 @@ for i, validata in enumerate(valiLoader, 0):
     lossL1_x = criterionL1(outputs[:, 0:1, :, :], targets[:, 0:1, :, :], inputs[:, :1, :, :]).item()
     lossL1_y = criterionL1(outputs[:, 1:2, :, :], targets[:, 1:2, :, :], inputs[:, :1, :, :]).item()
     lossL1_z = criterionL1(outputs[:, 2:3, :, :], targets[:, 2:3, :, :], inputs[:, :1, :, :]).item()
+    lossL1_p = criterionL1(outputs[:, 3:4, :, :], targets[:, 3_4, :, :], inputs[:, :1, :, :]).item()
 
-    loss_vector.append(np.mean([lossL1_x, lossL1_y, lossL1_z]))
+    loss_vector.append(np.mean([lossL1_x, lossL1_y, lossL1_z, lossL1_p]))
     loss_x.append(lossL1_x)
     loss_y.append(lossL1_y)
     loss_z.append(lossL1_z)
-    original_dp = inputs[:, 1, :, :] * norm_params.get("max_input_1")
+    loss_p.append(lossL1_p)
 
 argmin_loss = np.argmin(loss_vector)
 argmax_loss = np.argmax(loss_vector)
@@ -104,8 +106,10 @@ for i, validata in enumerate(valiLoader, 0):
     outputs_cpu = outputs.data.cpu().numpy()
     input_ndarray = inputs_cpu.cpu().numpy()[0]
 
-    outputs_denormalized = dataValidation.denormalize(outputs_cpu[0])
-    targets_denormalized = dataValidation.denormalize(targets_cpu.cpu().numpy()[0])
+    dp = dataValidation.inputs[i, 1, 0, 0]
+
+    outputs_denormalized = dataValidation.denormalize(outputs_cpu[0], deltaP=dp)
+    targets_denormalized = dataValidation.denormalize(targets_cpu.cpu().numpy()[0], deltaP=dp)
 
     utils.save_true_pred_img(os.path.join(validation_dir, stats_idx.get(i) + "_err_pred"),
                              outputs_denormalized,
@@ -129,3 +133,6 @@ plot_error_hist(loss_y, median_idx=np.argsort(loss_y)[len(loss_y) // 2],
                 save_path=os.path.join(validation_dir, "loss_hist_Uy.png"))
 plot_error_hist(loss_z, median_idx=np.argsort(loss_z)[len(loss_z) // 2],
                 save_path=os.path.join(validation_dir, "loss_hist_Uz.png"))
+plot_error_hist(loss_p, median_idx=np.argsort(loss_p)[len(loss_p) // 2],
+                save_path=os.path.join(validation_dir, "loss_hist_p.png"))
+

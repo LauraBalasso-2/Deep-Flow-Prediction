@@ -81,7 +81,7 @@ class UNet(nn.Module):
 
         self.dlayer1 = nn.Sequential()
         self.dlayer1.add_module('dlayer1_relu', nn.ReLU(inplace=True))
-        self.dlayer1.add_module('dlayer1_tconv', nn.ConvTranspose2d(channels * 2, 3, 4, 2, 1, bias=True))
+        self.dlayer1.add_module('dlayer1_tconv', nn.ConvTranspose2d(channels * 2, 4, 4, 2, 1, bias=True))
 
     def forward(self, x):
         out1 = self.layer1(x)

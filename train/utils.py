@@ -48,7 +48,7 @@ def save_true_pred_img(filename, _outputs, _targets, _input, smoothing=True):
     outputs = np.copy(_outputs)
     targets = np.copy(_targets)
     mask = np.copy(_input)
-    components_dict = {0: "_x", 1: "_y", 2: "_z"}
+    components_dict = {0: "_x", 1: "_y", 2: "_z", 3: "_p"}
     for i in range(outputs.shape[0]):
 
         if smoothing:

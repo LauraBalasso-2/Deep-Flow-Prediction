@@ -74,7 +74,7 @@ for i, validata in enumerate(valiLoader, 0):
     inputs.data.copy_(inputs_cpu.float())
     targets.data.copy_(targets_cpu.float())
 
-    outputs = netG(inputs, sdf)
+    outputs = netG(inputs, sdf.float())
     outputs_cpu = outputs.data.cpu().numpy()
 
     lossL1_x = criterionL1(outputs[:, 0:1, :, :], targets[:, 0:1, :, :], sdf).item()
@@ -106,7 +106,7 @@ for i, validata in enumerate(valiLoader, 0):
     inputs.data.copy_(inputs_cpu.float())
     targets.data.copy_(targets_cpu.float())
 
-    outputs = netG(inputs, sdf)
+    outputs = netG(inputs, sdf.float())
     outputs_cpu = outputs.data.cpu().numpy()
 
     outputs_denormalized = dataValidation.denormalize(outputs_cpu[0])

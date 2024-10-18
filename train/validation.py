@@ -54,7 +54,7 @@ dataValidation = dataset.SlicesDataset(dataDir=specs["data_source"],
 valiLoader = DataLoader(dataValidation, batch_size=batch_size, shuffle=False, drop_last=True)
 print("Validation batches: {}".format(len(valiLoader)))
 
-targets = Variable(torch.FloatTensor(batch_size, 3, 128, 128))
+targets = Variable(torch.FloatTensor(batch_size, 4, 128, 128))
 inputs = Variable(torch.FloatTensor(batch_size, 2, 128, 128))
 
 criterionL1 = utils.CustomWeightedL1Loss(0.0, sdf_threshold=0.0)
@@ -75,7 +75,7 @@ for i, validata in enumerate(valiLoader, 0):
     lossL1_x = criterionL1(outputs[:, 0:1, :, :], targets[:, 0:1, :, :], inputs[:, :1, :, :]).item()
     lossL1_y = criterionL1(outputs[:, 1:2, :, :], targets[:, 1:2, :, :], inputs[:, :1, :, :]).item()
     lossL1_z = criterionL1(outputs[:, 2:3, :, :], targets[:, 2:3, :, :], inputs[:, :1, :, :]).item()
-    lossL1_p = criterionL1(outputs[:, 3:4, :, :], targets[:, 3_4, :, :], inputs[:, :1, :, :]).item()
+    lossL1_p = criterionL1(outputs[:, 3:4, :, :], targets[:, 3:4, :, :], inputs[:, :1, :, :]).item()
 
     loss_vector.append(np.mean([lossL1_x, lossL1_y, lossL1_z, lossL1_p]))
     loss_x.append(lossL1_x)

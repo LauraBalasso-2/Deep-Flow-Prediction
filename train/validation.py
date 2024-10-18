@@ -5,7 +5,7 @@ import argparse
 import dataset
 from torch.utils.data import DataLoader
 import torch
-from encoder_decoder import UNetNoSkip as UNet
+from uNet_architecture import UNet
 from torch.autograd import Variable
 import numpy as np
 import utils

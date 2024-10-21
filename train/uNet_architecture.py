@@ -79,7 +79,7 @@ class UNet(nn.Module):
         self.dlayer2 = blockUNet(channels * 4, channels, 'dlayer2', transposed=True, bn=True, relu=True,
                                  dropout=dropout)
 
-        self.dlayer1 = blockUNet(channels, 4, 'dlayer1', transposed=True, bn=False, relu=True)
+        self.dlayer1 = blockUNet(channels*2, 4, 'dlayer1', transposed=True, bn=False, relu=True)
 
     def forward(self, x):
         out1 = self.layer1(x)

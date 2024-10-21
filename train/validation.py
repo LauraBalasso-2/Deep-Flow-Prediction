@@ -83,39 +83,51 @@ for i, validata in enumerate(valiLoader, 0):
     loss_z.append(lossL1_z)
     loss_p.append(lossL1_p)
 
-argmin_loss = np.argmin(loss_vector)
-argmax_loss = np.argmax(loss_vector)
-arg_med_loss = np.argsort(loss_vector)[len(loss_vector) // 2]
+argmin_loss_ux = np.argmin(loss_x)
+argmax_loss_ux = np.argmax(loss_x)
+arg_med_loss_ux = np.argsort(loss_x)[len(loss_x) // 2]
 
-stats_idx = {argmin_loss: "min",
-             argmax_loss: "max",
-             arg_med_loss: "median"}
+argmin_loss_uy = np.argmin(loss_y)
+argmax_loss_uy = np.argmax(loss_y)
+arg_med_loss_uy = np.argsort(loss_y)[len(loss_y) // 2]
+
+argmin_loss_uz = np.argmin(loss_z)
+argmax_loss_uz = np.argmax(loss_z)
+arg_med_loss_uz = np.argsort(loss_z)[len(loss_z) // 2]
+
+argmin_loss_p = np.argmin(loss_p)
+argmax_loss_p = np.argmax(loss_p)
+arg_med_loss_p = np.argsort(loss_p)[len(loss_p) // 2]
+
+stats_idx = {"ux": {"min": argmin_loss_ux, "max": argmax_loss_ux, "median": arg_med_loss_ux},
+             "uy": {"min": argmin_loss_uy, "max": argmax_loss_uy, "median": arg_med_loss_uy},
+             "uz": {"min": argmin_loss_uz, "max": argmax_loss_uz, "median": arg_med_loss_uz},
+             "p": {"min": argmin_loss_p, "max": argmax_loss_p, "median": arg_med_loss_p}}
 
 validation_dir = os.path.join(experiment_directory, "validation")
 utils.makeDirs([validation_dir])
 
-for i, validata in enumerate(valiLoader, 0):
-    if i not in stats_idx.keys():
-        continue
-    print(stats_idx.get(i), "error on index {}".format(i), "with value ", loss_vector[i])
-    inputs_cpu, targets_cpu = validata
-    inputs.data.copy_(inputs_cpu.float())
-    targets.data.copy_(targets_cpu.float())
+for field, stats in stats_idx.items():
+    for stat, i in stats.items():
+        inputs_cpu, targets_cpu = dataValidation[i]
+        print(stat, "error on index {}".format(i), "with value ", loss_vector[i])
+        inputs.data.copy_(inputs_cpu.float())
+        targets.data.copy_(targets_cpu.float())
 
-    outputs = netG(inputs)
-    outputs_cpu = outputs.data.cpu().numpy()
-    input_ndarray = inputs_cpu.cpu().numpy()[0]
+        outputs = netG(inputs)
+        outputs_cpu = outputs.data.cpu().numpy()
+        input_ndarray = inputs_cpu.cpu().numpy()[0]
 
-    dp = dataValidation.inputs[i, 1, 0, 0]
+        dp = dataValidation.inputs[i, 1, 0, 0]
 
-    outputs_denormalized = dataValidation.denormalize(outputs_cpu[0], deltaP=dp)
-    targets_denormalized = dataValidation.denormalize(targets_cpu.cpu().numpy()[0], deltaP=dp)
+        outputs_denormalized = dataValidation.denormalize(outputs_cpu[0], deltaP=dp)
+        targets_denormalized = dataValidation.denormalize(targets_cpu.cpu().numpy()[0], deltaP=dp)
 
-    utils.save_true_pred_img(os.path.join(validation_dir, stats_idx.get(i) + "_err_pred"),
-                             outputs_denormalized,
-                             targets_denormalized,
-                             input_ndarray[0].reshape(128, 128),
-                             smoothing=False)
+        utils.save_true_pred_img(os.path.join(validation_dir, stats_idx.get(i) + "_err_pred"),
+                                 outputs_denormalized,
+                                 targets_denormalized,
+                                 input_ndarray[0].reshape(128, 128),
+                                 smoothing=False)
 
 
 def plot_error_hist(loss_list, median_idx, save_path):
@@ -135,4 +147,3 @@ plot_error_hist(loss_z, median_idx=np.argsort(loss_z)[len(loss_z) // 2],
                 save_path=os.path.join(validation_dir, "loss_hist_Uz.png"))
 plot_error_hist(loss_p, median_idx=np.argsort(loss_p)[len(loss_p) // 2],
                 save_path=os.path.join(validation_dir, "loss_hist_p.png"))
-

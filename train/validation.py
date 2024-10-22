@@ -133,8 +133,7 @@ for field, stats in stats_idx.items():
                                               outputs_denormalized,
                                               targets_denormalized,
                                               field_name=field,
-                                              inputs_cpu[0].reshape(128, 128),
-                                              smoothing=False)
+                                              _input=inputs_cpu[0].reshape(128, 128))
 
 
 def plot_error_hist(loss_list, median_idx, save_path):

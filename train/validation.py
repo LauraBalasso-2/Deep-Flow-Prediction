@@ -39,7 +39,7 @@ specs = utils.load_experiment_specifications(experiment_directory)
 dropout = specs['dropout']
 expo = specs["unet_channel_exponent"]
 netG = UNet(channelExponent=expo, dropout=dropout)
-netG.load_state_dict(torch.load(os.path.join(experiment_directory,"model_U")))
+netG.load_state_dict(torch.load(os.path.join(experiment_directory, "model_U")))
 netG.eval()
 
 batch_size = 1
@@ -123,17 +123,18 @@ for field, stats in stats_idx.items():
         print(stat, "error on index {}, with val {:.4f}".format(i, val))
         outputs = netG(torch.from_numpy(inputs_cpu.reshape(batch_size, -1, 128, 128)).float())
         outputs_cpu = outputs.data.cpu().numpy()
-        
+
         dp = dataValidation.inputs[i, 1, 0, 0]
 
         outputs_denormalized = dataValidation.denormalize(outputs_cpu[0], deltaP=dp)
         targets_denormalized = dataValidation.denormalize(targets_cpu, deltaP=dp)
 
-        utils.save_true_pred_img(os.path.join(validation_dir, stat + "_err_pred_" + field),
-                                 outputs_denormalized,
-                                 targets_denormalized,
-                                 inputs_cpu[0].reshape(128, 128),
-                                 smoothing=False)
+        utils.save_single_field_true_pred_img(os.path.join(validation_dir, stat + "_err_pred_"),
+                                              outputs_denormalized,
+                                              targets_denormalized,
+                                              field_name=field,
+                                              inputs_cpu[0].reshape(128, 128),
+                                              smoothing=False)
 
 
 def plot_error_hist(loss_list, median_idx, save_path):

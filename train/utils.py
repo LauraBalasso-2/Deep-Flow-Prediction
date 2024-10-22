@@ -78,6 +78,34 @@ def save_true_pred_img(filename, _outputs, _targets, _input, smoothing=True):
         plt.close()
 
 
+def save_single_field_true_pred_img(filename, _outputs, _targets, field_name, _input):
+    mask = np.copy(_input)
+    components_dict = {"ux": 0, "uy": 1, "uz": 2, "p": 3}
+    outputs = np.copy(_outputs[components_dict.get(field_name)])
+    targets = np.copy(_targets[components_dict.get(field_name)])
+
+    fig, axs = plt.subplots(2, 1)
+    masked_target = np.ma.masked_where(mask > 0, targets)
+    aa = axs[0].matshow(masked_target)
+    axs[0].set_title("true")
+    fig.colorbar(aa, ax=axs[0])
+
+    masked_output = np.ma.masked_where(mask > 0, outputs)
+    ab = axs[1].matshow(masked_output)
+    axs[1].set_title("pred")
+    fig.colorbar(ab, ax=axs[1])
+    plt.savefig(filename + "_" + field_name + ".png", dpi=200)
+    plt.close()
+
+    err = np.abs(targets - outputs)
+    masked_err = np.ma.masked_where(mask > 0, err)
+    plt.matshow(masked_err)
+    plt.title("masked error")
+    plt.colorbar()
+    plt.savefig(filename + "_" + field_name + "_masked_error.png", dpi=150)
+    plt.close()
+
+
 def makeDirs(directoryList):
     for directory in directoryList:
         os.makedirs(directory, exist_ok=True)

@@ -121,19 +121,18 @@ for field, stats in stats_idx.items():
     for stat, (i, val) in stats.items():
         inputs_cpu, targets_cpu = dataValidation[i]
         print(stat, "error on index {}, with val {:.4f}".format(i, val))
-        outputs = netG(torch.from_numpy(inputs_cpu))
+        outputs = netG(torch.from_numpy(inputs_cpu.reshape(batch_size, -1, 128, 128)).float())
         outputs_cpu = outputs.data.cpu().numpy()
-        input_ndarray = inputs_cpu.cpu().numpy()[0]
-
+        
         dp = dataValidation.inputs[i, 1, 0, 0]
 
         outputs_denormalized = dataValidation.denormalize(outputs_cpu[0], deltaP=dp)
-        targets_denormalized = dataValidation.denormalize(targets_cpu.cpu().numpy()[0], deltaP=dp)
+        targets_denormalized = dataValidation.denormalize(targets_cpu, deltaP=dp)
 
-        utils.save_true_pred_img(os.path.join(validation_dir, stats_idx.get(i) + "_err_pred"),
+        utils.save_true_pred_img(os.path.join(validation_dir, stat + "_err_pred_" + field),
                                  outputs_denormalized,
                                  targets_denormalized,
-                                 input_ndarray[0].reshape(128, 128),
+                                 inputs_cpu[0].reshape(128, 128),
                                  smoothing=False)
 
 

@@ -111,10 +111,7 @@ for field, stats in stats_idx.items():
     for stat, i in stats.items():
         inputs_cpu, targets_cpu = dataValidation[i]
         print(stat, "error on index {}".format(i), "with value ", loss_vector[i])
-        inputs.data.copy_(inputs_cpu.float())
-        targets.data.copy_(targets_cpu.float())
-
-        outputs = netG(inputs)
+        outputs = netG(torch.from_numpy(inputs_cpu))
         outputs_cpu = outputs.data.cpu().numpy()
         input_ndarray = inputs_cpu.cpu().numpy()[0]
 

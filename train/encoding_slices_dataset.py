@@ -41,7 +41,7 @@ class LatentSlicesDataset(Dataset):
         self.code_length = self.latent_codes.shape[1]
         self.inputs = np.empty((self.totalLength, self.code_length + 2, 1, 1))
         self.sdf = np.empty((self.totalLength, 1, 128, 128))
-        self.targets = np.empty((self.totalLength, 3, 128, 128))
+        self.targets = np.empty((self.totalLength, 4, 128, 128))
         self.thicknesses = np.empty(self.totalLength)
         self.slice_indexes = np.empty(self.totalLength)
 
@@ -86,13 +86,15 @@ class LatentSlicesDataset(Dataset):
             np_file = np.load(os.path.join(self.dataDir, file))
             d = np_file['a']
             self.sdf[i] = d[0]
-            self.targets[i] = d[2:5]
+            self.targets[i] = d[2:]
+
             sample_name = file.split("/")[-1].split(".")[0]
             self.thicknesses[i] = sample_name.split("_")[1]
             self.slice_indexes[i] = sample_name.split("_")[-1]
 
             latent = self.latent_codes[self.latent_codes_thickness.index(str(int(self.thicknesses[i])).zfill(3))]
             dp = np.unique(d[1])
+            self.targets[i, -1, :, :] /= dp
             self.inputs[i] = np.concatenate((latent.reshape(-1), dp, [self.slice_indexes[i]])).reshape(-1, 1, 1)
 
         print("Number of training data:", len(self.inputs))
@@ -125,11 +127,12 @@ class LatentSlicesDataset(Dataset):
             np.mean(np.abs(self.inputs), keepdims=False), np.max(np.abs(self.inputs), keepdims=False),
             np.mean(np.abs(self.targets), keepdims=False), np.max(np.abs(self.targets), keepdims=False)))
 
-    def denormalize(self, data):
+    def denormalize(self, data, deltaP):
         a = data.copy()
         a[0, :, :] /= (1.0 / self.normalization_parameters.get("max_target_0"))
         a[1, :, :] /= (1.0 / self.normalization_parameters.get("max_target_1"))
         a[2, :, :] /= (1.0 / self.normalization_parameters.get("max_target_2"))
+        a[3, :, :] *= deltaP
 
         return a
 

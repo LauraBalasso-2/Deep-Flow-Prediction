@@ -99,18 +99,28 @@ argmin_loss_p = np.argmin(loss_p)
 argmax_loss_p = np.argmax(loss_p)
 arg_med_loss_p = np.argsort(loss_p)[len(loss_p) // 2]
 
-stats_idx = {"ux": {"min": argmin_loss_ux, "max": argmax_loss_ux, "median": arg_med_loss_ux},
-             "uy": {"min": argmin_loss_uy, "max": argmax_loss_uy, "median": arg_med_loss_uy},
-             "uz": {"min": argmin_loss_uz, "max": argmax_loss_uz, "median": arg_med_loss_uz},
-             "p": {"min": argmin_loss_p, "max": argmax_loss_p, "median": arg_med_loss_p}}
+arg_med_loss = np.argsort(loss_vector)[len(loss_vector) // 2]
+
+stats_idx = {"ux": {"min": (argmin_loss_ux, loss_x[argmin_loss_ux]),
+                    "max": (argmin_loss_ux, loss_x[argmin_loss_ux]),
+                    "median": (arg_med_loss_ux, loss_x[arg_med_loss_ux])},
+             "uy": {"min": (argmin_loss_uy, loss_y[argmin_loss_uy]),
+                    "max": (argmax_loss_uy, loss_y[argmax_loss_uy]),
+                    "median": (arg_med_loss_uy, loss_y[arg_med_loss_uy])},
+             "uz": {"min": (argmin_loss_uz, loss_z[argmin_loss_uz]),
+                    "max": (argmax_loss_uz, loss_z[argmax_loss_uz]),
+                    "median": (arg_med_loss_uz, loss_z[arg_med_loss_uz])},
+             "p": {"min": (argmin_loss_p, loss_p[argmin_loss_p]),
+                   "max": (argmax_loss_p, loss_p[argmax_loss_p]),
+                   "median": (arg_med_loss_p, loss_p[arg_med_loss_p])}}
 
 validation_dir = os.path.join(experiment_directory, "validation")
 utils.makeDirs([validation_dir])
 
 for field, stats in stats_idx.items():
-    for stat, i in stats.items():
+    for stat, (i, val) in stats.items():
         inputs_cpu, targets_cpu = dataValidation[i]
-        print(stat, "error on index {}".format(i), "with value ", loss_vector[i])
+        print(stat, "error on index {}, with val {:.4f}".format(i, val))
         outputs = netG(torch.from_numpy(inputs_cpu))
         outputs_cpu = outputs.data.cpu().numpy()
         input_ndarray = inputs_cpu.cpu().numpy()[0]

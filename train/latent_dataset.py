@@ -7,7 +7,7 @@ import numpy as np
 from os import listdir
 import random
 
-from train.utils import set_device
+from utils import set_device
 
 
 def load_normalization_parameters(experiment_directory):

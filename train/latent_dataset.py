@@ -38,6 +38,7 @@ class SlicesDataset(Dataset):
         self.files = listdir(self.dataDir) if split is None else self.get_files_list(split)
         self.totalLength = len(self.files)
         self.latent_codes, self.latent_codes_thickness = self.load_train_validation_encoding(latent_codes_dir)
+        self.latent_size = self.latent_codes.shape[1]
 
         self.inputs = np.empty((self.totalLength, 2, 128, 128))
         self.targets = np.empty((self.totalLength, 4, 128, 128))

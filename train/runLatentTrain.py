@@ -92,7 +92,7 @@ sys.stdout.flush()
 
 # setup training
 epochs = specs["epochs"]
-netG = utils.set_device(UNet(channelExponent=expo, dropout=dropout), device=device)
+netG = utils.set_device(UNet(channelExponent=expo, dropout=dropout, latent_size=data.latent_size), device=device)
 print(netG)  # print full net
 model_parameters = filter(lambda p: p.requires_grad, netG.parameters())
 params = sum([np.prod(p.size()) for p in model_parameters])

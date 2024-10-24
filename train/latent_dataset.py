@@ -41,7 +41,7 @@ class SlicesDataset(Dataset):
         self.targets = np.empty((self.totalLength, 4, 128, 128))
         self.thicknesses = np.empty(self.totalLength)
         self.slice_indexes = np.empty(self.totalLength)
-
+        self.device = device
         self.load_data()
 
         self.normalization_parameters = normalization_parameters if normalization_parameters is not None \

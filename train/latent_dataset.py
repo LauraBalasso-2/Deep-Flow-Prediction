@@ -101,7 +101,7 @@ class SlicesDataset(Dataset):
             random.shuffle(files)
 
         print("Loading {:d} training files from {:s} ...".format(self.totalLength, self.dataDir))
-        latent_codes = np.empty_like(self.latent_codes)
+        latent_codes = np.empty((self.totalLength, self.latent_codes.shape[1]))
         for i, file in enumerate(files):
             np_file = np.load(os.path.join(self.dataDir, file))
             d = np_file['a']

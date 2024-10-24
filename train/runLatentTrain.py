@@ -162,13 +162,15 @@ for epoch in range(epochs):
     netG.eval()
     L1val_accum = 0.0
     for i, validata in enumerate(valiLoader, 0):
-        inputs_cpu, targets_cpu = validata
+        inputs_cpu, targets_cpu , latent_cpu = validata
         inputs_cpu = utils.set_device(inputs_cpu.float(), device)
         targets_cpu = utils.set_device(targets_cpu.float(), device)
+        latent_cpu = utils.set_device(latent_cpu.reshape(batch_size, -1, 1, 1).float(), device)
+
         inputs.data.resize_as_(inputs_cpu).copy_(inputs_cpu)
         targets.data.resize_as_(targets_cpu).copy_(targets_cpu)
 
-        outputs = netG(inputs)
+        outputs = netG(inputs, latent_cpu)
         outputs_cpu = outputs.data.cpu().numpy()
 
         lossL1 = criterionL1(outputs, targets, inputs[:, :1, :, :])

@@ -123,14 +123,13 @@ for epoch in range(epochs):
     L1_accum = 0.0
     for i, traindata in enumerate(trainLoader, 0):
         inputs_cpu, targets_cpu, latent_cpu = traindata
-        inputs_cpu = utils.set_device(inputs_cpu.float(), device)
+        latent_cpu = utils.set_device(latent_cpu.reshape(batch_size, -1, 1, 1).float(), device)
         targets_cpu = utils.set_device(targets_cpu.float(), device)
+        inputs_cpu = utils.set_device(inputs_cpu.float(), device)
+
         inputs.data.resize_as_(inputs_cpu).copy_(inputs_cpu)
         targets.data.resize_as_(targets_cpu).copy_(targets_cpu)
-        latent_cpu = utils.set_device(latent_cpu.float(), device)
-
-
-
+        
         # compute LR decay
         if decayLr:
             currLr = utils.computeLR(epoch, epochs, lrG * 0.1, lrG)
@@ -139,6 +138,7 @@ for epoch in range(epochs):
                     g['lr'] = currLr
 
         netG.zero_grad()
+        print(latent_cpu.shape)
         gen_out = netG(inputs, latent_cpu)
 
         lossL1 = criterionL1(gen_out, targets, inputs[:, :1, :, :])

@@ -94,7 +94,7 @@ class UNet(nn.Module):
         dout_bottleneck = self.dlayer_bottleneck(latent_code)
 
         dout6 = self.dlayer6(dout_bottleneck)
-        dout6_out5 = torch.cat([dout6, out5], 1)
+        dout6_out5 = torch.cat([dout6, out6], 1)
         dout5 = self.dlayer5(dout6_out5)
         dout5_out4 = torch.cat([dout5, out4], 1)
         dout4 = self.dlayer4(dout5_out4)

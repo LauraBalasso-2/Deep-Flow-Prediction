@@ -31,6 +31,8 @@ class SlicesDataset(Dataset):
             exit(1)
 
         self.mode = mode
+        self.device = device
+
         self.shuffle = shuffle
         self.dataDir = dataDir
         self.files = listdir(self.dataDir) if split is None else self.get_files_list(split)
@@ -41,7 +43,6 @@ class SlicesDataset(Dataset):
         self.targets = np.empty((self.totalLength, 4, 128, 128))
         self.thicknesses = np.empty(self.totalLength)
         self.slice_indexes = np.empty(self.totalLength)
-        self.device = device
         self.load_data()
 
         self.normalization_parameters = normalization_parameters if normalization_parameters is not None \

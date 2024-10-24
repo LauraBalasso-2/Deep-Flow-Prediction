@@ -74,9 +74,11 @@ sys.stdout.flush()
 with open(specs["train_split"], "r") as f:
     train_split = json.load(f)
 data = dataset.SlicesDataset(dataDir=specs["data_source"],
+                             latent_codes_dir=specs["latent_code_dir"],
                              split=train_split,
                              mode=0,
-                             shuffle=0)
+                             shuffle=0,
+                             device=device)
 
 data.save_normalization_parameters(experiment_directory)
 

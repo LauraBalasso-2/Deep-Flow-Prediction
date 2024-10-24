@@ -36,6 +36,7 @@ class LatentSlicesDataset(Dataset):
         self.dataDir = dataDir
         self.files = listdir(self.dataDir) if split is None else self.get_files_list(split)
         self.totalLength = len(self.files)
+        self.device = device
 
         self.latent_codes, self.latent_codes_thickness = self.load_train_validation_encoding(latent_codes_dir)
         self.code_length = self.latent_codes.shape[1]

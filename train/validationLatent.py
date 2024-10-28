@@ -69,6 +69,7 @@ loss_p = []
 for i, validata in enumerate(valiLoader, 0):
     inputs_cpu, targets_cpu, latent_cpu = validata
     latent_cpu = utils.set_device(latent_cpu.reshape(batch_size, -1, 1, 1).float(), device)
+    inputs_gpu = utils.set_device(inputs_cpu.reshape(batch_size, -1, 1, 1).float(), device)
 
     inputs.data.copy_(inputs_cpu.float())
     targets.data.copy_(targets_cpu.float())

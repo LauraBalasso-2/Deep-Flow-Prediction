@@ -67,11 +67,13 @@ loss_z = []
 loss_p = []
 
 for i, validata in enumerate(valiLoader, 0):
-    inputs_cpu, targets_cpu = validata
+    inputs_cpu, targets_cpu, latent_cpu = validata
+    latent_cpu = utils.set_device(latent_cpu.reshape(batch_size, -1, 1, 1).float(), device)
+
     inputs.data.copy_(inputs_cpu.float())
     targets.data.copy_(targets_cpu.float())
 
-    outputs = netG(inputs)
+    outputs = netG(inputs, latent_cpu)
     outputs_cpu = outputs.data.cpu().numpy()
 
     lossL1_x = criterionL1(outputs[:, 0:1, :, :], targets[:, 0:1, :, :], inputs[:, :1, :, :]).item()
@@ -121,9 +123,9 @@ utils.makeDirs([validation_dir])
 
 for field, stats in stats_idx.items():
     for stat, (i, val) in stats.items():
-        inputs_cpu, targets_cpu = dataValidation[i]
+        inputs_cpu, targets_cpu, latent_cpu = dataValidation[i]
         print(stat, "error on index {}, with val {:.4f}".format(i, val))
-        outputs = netG(torch.from_numpy(inputs_cpu.reshape(batch_size, -1, 128, 128)).float())
+        outputs = netG(torch.from_numpy(inputs_cpu.reshape(batch_size, -1, 128, 128)).float(), torch.from_numpy(latent_cpu))
         outputs_cpu = outputs.data.cpu().numpy()
 
         dp = dataValidation.inputs[i, 1, 0, 0]

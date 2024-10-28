@@ -10,6 +10,7 @@ import argparse
 import json
 import os
 import random
+import signal
 import sys
 
 import matplotlib.pyplot as plt
@@ -41,6 +42,8 @@ arg_parser.add_argument(
 )
 
 args = arg_parser.parse_args()
+
+signal.signal(signal.SIGINT, utils.signal_handler)
 
 device = args.device
 experiment_directory = args.experiment_directory

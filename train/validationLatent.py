@@ -39,16 +39,16 @@ specs = utils.load_experiment_specifications(experiment_directory)
 dropout = specs['dropout']
 expo = specs["unet_channel_exponent"]
 
-
 batch_size = 1
 with open(specs["test_split"], "r") as f:
     test_split = json.load(f)
 norm_params = dataset.load_normalization_parameters(experiment_directory=experiment_directory)
 dataValidation = dataset.SlicesDataset(dataDir=specs["data_source"],
+                                       latent_codes_dir=specs["latent_code_dir"],
                                        split=test_split,
-                                       shuffle=0,
                                        mode=2,
-                                       normalization_parameters=norm_params)
+                                       shuffle=0,
+                                       device=device)
 valiLoader = DataLoader(dataValidation, batch_size=batch_size, shuffle=False, drop_last=True)
 print("Validation batches: {}".format(len(valiLoader)))
 

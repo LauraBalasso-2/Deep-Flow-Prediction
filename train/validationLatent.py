@@ -38,9 +38,7 @@ specs = utils.load_experiment_specifications(experiment_directory)
 ## Load model
 dropout = specs['dropout']
 expo = specs["unet_channel_exponent"]
-netG = UNet(channelExponent=expo, dropout=dropout)
-netG.load_state_dict(torch.load(os.path.join(experiment_directory, "model_U")))
-netG.eval()
+
 
 batch_size = 1
 with open(specs["test_split"], "r") as f:
@@ -53,6 +51,10 @@ dataValidation = dataset.SlicesDataset(dataDir=specs["data_source"],
                                        normalization_parameters=norm_params)
 valiLoader = DataLoader(dataValidation, batch_size=batch_size, shuffle=False, drop_last=True)
 print("Validation batches: {}".format(len(valiLoader)))
+
+netG = UNet(channelExponent=expo, dropout=dropout, latent_size=dataValidation.latent_size)
+netG.load_state_dict(torch.load(os.path.join(experiment_directory, "model_U")))
+netG.eval()
 
 targets = Variable(torch.FloatTensor(batch_size, 4, 128, 128))
 inputs = Variable(torch.FloatTensor(batch_size, 2, 128, 128))

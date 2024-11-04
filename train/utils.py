@@ -6,6 +6,7 @@
 #
 ################
 import json
+import sys
 
 import math, re, os
 import numpy as np
@@ -162,3 +163,8 @@ def get_specifications_filename(experiment_directory):
 def load_experiment_specifications(experiment_directory):
     filename = get_specifications_filename(experiment_directory)
     return json.load(open(filename))
+
+
+def signal_handler(sig, frame):
+    print("Stopping early...")
+    sys.exit(0)

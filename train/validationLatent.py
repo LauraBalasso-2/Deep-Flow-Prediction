@@ -52,7 +52,7 @@ dataValidation = dataset.SlicesDataset(dataDir=specs["data_source"],
 valiLoader = DataLoader(dataValidation, batch_size=batch_size, shuffle=False, drop_last=True)
 print("Validation batches: {}".format(len(valiLoader)))
 
-netG = UNet(channelExponent=expo, dropout=dropout, latent_size=dataValidation.latent_size)
+netG = UNet(channelExponent=expo, dropout=dropout, latent_size=dataValidation.latent_size + 2)
 netG.load_state_dict(torch.load(os.path.join(experiment_directory, "model_U")))
 netG.eval()
 

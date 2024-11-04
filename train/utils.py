@@ -34,7 +34,7 @@ def resetLog(file):
 
 # compute learning rate with decay in second half
 def computeLR(i, epochs, minLR, maxLR):
-    if i < epochs * 0.5:
+    if i < epochs * 0.3:
         return maxLR
     e = (i / float(epochs) - 0.5) * 2.
     # rescale second half to min/max range

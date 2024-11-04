@@ -95,8 +95,8 @@ sys.stdout.flush()
 
 # setup training
 epochs = specs["epochs"]
-netG = utils.set_device(UNet(channelExponent=expo, dropout=dropout, latent_size=data.latent_size), device=device)
-print(netG)  # print full net
+netG = utils.set_device(UNet(channelExponent=expo, dropout=dropout, latent_size=data.latent_size + 2), device=device)
+print(netG)
 model_parameters = filter(lambda p: p.requires_grad, netG.parameters())
 params = sum([np.prod(p.size()) for p in model_parameters])
 print("Initialized UNet with {} trainable params ".format(params))
@@ -125,8 +125,8 @@ for epoch in range(epochs):
     netG.train()
     L1_accum = 0.0
     for i, traindata in enumerate(trainLoader, 0):
-        inputs_cpu, targets_cpu, latent_cpu = traindata
-        latent_cpu = utils.set_device(latent_cpu.reshape(batch_size, -1, 1, 1).float(), device)
+        inputs_cpu, targets_cpu, bottleneck = traindata
+        bottleneck = utils.set_device(bottleneck.reshape(batch_size, -1, 1, 1).float(), device)
         targets_cpu = utils.set_device(targets_cpu.float(), device)
         inputs_cpu = utils.set_device(inputs_cpu.float(), device)
 
@@ -141,8 +141,8 @@ for epoch in range(epochs):
                     g['lr'] = currLr
 
         netG.zero_grad()
-        print(latent_cpu.shape)
-        gen_out = netG(inputs, latent_cpu)
+        print(bottleneck.shape)
+        gen_out = netG(inputs, bottleneck)
 
         lossL1 = criterionL1(gen_out, targets, inputs[:, :1, :, :])
         lossL1.backward()
@@ -165,15 +165,15 @@ for epoch in range(epochs):
     netG.eval()
     L1val_accum = 0.0
     for i, validata in enumerate(valiLoader, 0):
-        inputs_cpu, targets_cpu , latent_cpu = validata
+        inputs_cpu, targets_cpu , bottleneck = validata
         inputs_cpu = utils.set_device(inputs_cpu.float(), device)
         targets_cpu = utils.set_device(targets_cpu.float(), device)
-        latent_cpu = utils.set_device(latent_cpu.reshape(batch_size, -1, 1, 1).float(), device)
+        bottleneck = utils.set_device(bottleneck.reshape(batch_size, -1, 1, 1).float(), device)
 
         inputs.data.resize_as_(inputs_cpu).copy_(inputs_cpu)
         targets.data.resize_as_(targets_cpu).copy_(targets_cpu)
 
-        outputs = netG(inputs, latent_cpu)
+        outputs = netG(inputs, bottleneck)
         outputs_cpu = outputs.data.cpu().numpy()
 
         lossL1 = criterionL1(outputs, targets, inputs[:, :1, :, :])

@@ -42,6 +42,7 @@ class SlicesDataset(Dataset):
 
         self.inputs = np.empty((self.totalLength, 2, 128, 128))
         self.targets = np.empty((self.totalLength, 4, 128, 128))
+        self.delta_p = np.empty(self.totalLength)
         self.thicknesses = np.empty(self.totalLength)
         self.slice_indexes = np.empty(self.totalLength)
         self.load_data()
@@ -60,17 +61,21 @@ class SlicesDataset(Dataset):
             self.valiTargets = self.targets[targetLength:]
             self.valiLength = self.totalLength - targetLength
             self.valiLatent_codes = self.latent_codes[targetLength:]
+            self.valiSliceIndexes = self.slice_indexes[targetLength:]
+            self.valiDeltaP = self.delta_p[targetLength:]
 
             self.inputs = self.inputs[:targetLength]
             self.targets = self.targets[:targetLength]
             self.totalLength = self.inputs.shape[0]
             self.latent_codes = self.latent_codes[:targetLength]
+            self.slice_indexes = self.slice_indexes[:targetLength]
+            self.delta_p = self.delta_p[:targetLength]
 
     def __len__(self):
         return self.totalLength
 
     def __getitem__(self, idx):
-        return self.inputs[idx], self.targets[idx], self.latent_codes[idx]
+        return self.inputs[idx], self.targets[idx], np.concatenate((self.latent_codes[idx].ravel(),[ self.delta_p[idx]], [self.slice_indexes[idx]]))
 
     def load_latent_codes(self, latent_codes_dir):
         thickness_idx = json.load(open(os.path.join(latent_codes_dir, "rows_thickness.json")))
@@ -108,7 +113,8 @@ class SlicesDataset(Dataset):
             d = np_file['a']
             self.inputs[i] = d[0:2]
             self.targets[i] = d[2:]
-            self.targets[i, -1, :, :] /= np.unique(self.inputs[i, 1, :, :])[0]
+            self.delta_p[i] = np.unique(self.inputs[i, 1, :, :])[0]
+            self.targets[i, -1, :, :] /= self.delta_p[i]
             sample_name = file.split("/")[-1].split(".")[0]
             self.thicknesses[i] = int(sample_name.split("_")[1])
             self.slice_indexes[i] = int(sample_name.split("_")[-1])
@@ -121,6 +127,11 @@ class SlicesDataset(Dataset):
         print("Getting normalization parameters from loaded data")
         max_inputs_0 = np.max(np.abs(self.inputs[:, 0, :, :]))
         max_inputs_1 = np.max(np.abs(self.inputs[:, 1, :, :]))
+        max_latent = np.max(np.abs(self.latent_codes))
+        max_delta_p = np.max(self.delta_p)
+        min_delta_p = np.min(self.delta_p)
+        max_slice_index = np.max(self.slice_indexes)
+        min_slice_index = np.min(self.slice_indexes)
         print("Max training sdf = {:.5f}; Max training dP =  {:.1f}".format(max_inputs_0, max_inputs_1))
 
         max_targets_0 = np.max(np.abs(self.targets[:, 0, :, :]))
@@ -129,7 +140,9 @@ class SlicesDataset(Dataset):
         print("Maxima training targets " + format([max_targets_0, max_targets_1, max_targets_2]))
 
         return {"max_input_0": max_inputs_0, "max_input_1": max_inputs_1,
-                "max_target_0": max_targets_0, "max_target_1": max_targets_1, "max_target_2": max_targets_2}
+                "max_target_0": max_targets_0, "max_target_1": max_targets_1, "max_target_2": max_targets_2,
+                "max_latent": max_latent, "max_delta_p": max_delta_p, "min_delta_p": min_delta_p,
+                "max_slice_index": max_slice_index, "min_slice_index": min_slice_index}
 
     def normalize(self):
         self.inputs[:, 0, :, :] *= (1.0 / self.normalization_parameters.get("max_input_0"))
@@ -139,6 +152,10 @@ class SlicesDataset(Dataset):
         self.targets[:, 1, :, :] *= (1.0 / self.normalization_parameters.get("max_target_1"))
         self.targets[:, 2, :, :] *= (1.0 / self.normalization_parameters.get("max_target_2"))
 
+        self.latent_codes *= (1.0 / self.normalization_parameters.get("max_latent"))
+
+        self.delta_p = (self.delta_p - self.normalization_parameters.get("min_delta_p")) / (self.normalization_parameters.get("max_delta_p") - self.normalization_parameters.get("min_delta_p"))
+        self.slice_indexes = (self.slice_indexes - self.normalization_parameters.get("min_slice_index")) / (self.normalization_parameters.get("max_slice_index") - self.normalization_parameters.get("min_slice_index"))
         print("Data stats, input  mean %f, max  %f;   targets mean %f , max %f " % (
             np.mean(np.abs(self.inputs), keepdims=False), np.max(np.abs(self.inputs), keepdims=False),
             np.mean(np.abs(self.targets), keepdims=False), np.max(np.abs(self.targets), keepdims=False)))
@@ -173,9 +190,11 @@ class ValiDataset(Dataset):
         self.targets = dataset.valiTargets
         self.totalLength = dataset.valiLength
         self.latent_codes = dataset.valiLatent_codes
+        self.delta_p = dataset.valiDeltaP
+        self.slice_indexes = dataset.valiSliceIndexes
 
     def __len__(self):
         return self.totalLength
 
     def __getitem__(self, idx):
-        return self.inputs[idx], self.targets[idx], self.latent_codes[idx]
+        return self.inputs[idx], self.targets[idx], np.concatenate((self.latent_codes[idx].ravel(), [self.delta_p[idx]], [self.slice_indexes[idx]]))

@@ -141,7 +141,6 @@ for epoch in range(epochs):
                     g['lr'] = currLr
 
         netG.zero_grad()
-        print(bottleneck.shape)
         gen_out = netG(inputs, bottleneck)
 
         lossL1 = criterionL1(gen_out, targets, inputs[:, :1, :, :])

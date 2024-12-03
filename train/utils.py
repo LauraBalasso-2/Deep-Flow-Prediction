@@ -79,7 +79,7 @@ def save_true_pred_img(filename, _outputs, _targets, _input, smoothing=True):
         plt.close()
 
 
-def save_single_field_true_pred_img(filename, _outputs, _targets, field_name, _input):
+def save_single_field_true_pred_img(filename, _outputs, _targets, field_name, _input, cmax=100000):
     mask = np.copy(_input)
     components_dict = {"ux": 0, "uy": 1, "uz": 2, "p": 3}
     outputs = np.copy(_outputs[components_dict.get(field_name)])
@@ -113,18 +113,26 @@ def makeDirs(directoryList):
 
 
 class CustomWeightedL1Loss(nn.Module):
-    def __init__(self, lambda_weight=0.1, sdf_threshold=0.0001):
+    def __init__(self, lambda_weight=0.1, sdf_threshold=0.0001, flow="inner"):
         super(CustomWeightedL1Loss, self).__init__()
         self.lambda_weight = lambda_weight
         self.sdf_threshold = sdf_threshold
+        if flow not in ["inner", "outer"]:
+            raise ValueError("flow must be inner or outer")
+        self.flow = flow
 
     def forward(self, predictions, targets, additional_param):
         l1_loss = torch.abs(predictions - targets)
 
         # Create the weights: lambda_weight where additional_param is positive, and 1 where it is negative
-        weights = torch.where(additional_param > self.sdf_threshold,
-                              torch.full_like(additional_param, self.lambda_weight),
-                              torch.ones_like(additional_param))
+        if self.flow == "inner":
+            weights = torch.where(additional_param > self.sdf_threshold,
+                                  torch.full_like(additional_param, self.lambda_weight),
+                                  torch.ones_like(additional_param))
+        else:
+            weights = torch.where(additional_param < self.sdf_threshold,
+                                  torch.full_like(additional_param, self.lambda_weight),
+                                  torch.ones_like(additional_param))
 
         weighted_l1_loss = l1_loss * weights
 
